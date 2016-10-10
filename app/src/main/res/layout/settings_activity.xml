@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:id="@+id/settings_activity"
+    >
+
+        <TextView
+            android:text="@string/pi_IP"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_marginTop="62dp"
+            android:textSize="35sp"
+            android:id="@+id/pi_ip_text_view"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentStart="true"
+            tools:text="@string/pi_IP" />
+
+        <TextView
+            android:text="@string/port"
+            android:textSize="35sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="38dp"
+            android:id="@+id/pi_port_text_view"
+            android:layout_below="@+id/pi_ip_text_view"
+            android:layout_alignStart="@+id/pi_ip_text_view" />
+
+
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:inputType="numberDecimal"
+            android:ems="10"
+            android:layout_alignBottom="@+id/pi_ip_text_view"
+            android:layout_toEndOf="@+id/pi_ip_text_view"
+            android:layout_marginStart="22dp"
+            android:digits="0123456789."
+            android:id="@+id/input_ip_edit_text" />
+
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:inputType="numberDecimal"
+            android:ems="10"
+            android:id="@+id/input_port_edit_text"
+            android:layout_marginLeft="15dp"
+            android:layout_alignBottom="@+id/pi_port_text_view"
+            android:layout_alignStart="@+id/input_ip_edit_text" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="35dp"
+            android:text="@string/connect"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:id="@+id/connect_button"
+            android:background="#2196f3"
+            android:layout_marginTop="28dp"
+            android:layout_below="@+id/input_port_edit_text"
+            android:layout_centerHorizontal="true" />
+
+        <TextView
+            android:text="TextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="23dp"
+            android:id="@+id/connect_status"
+            android:layout_below="@+id/connect_button"
+            android:layout_centerHorizontal="true" />
+
+
+</RelativeLayout>

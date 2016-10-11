@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                fragmentManager.beginTransaction().replace(R.id.content_frame, new Main2Activity()).commitAllowingStateLoss();
+                fragmentManager.beginTransaction().replace(R.id.content_frame, new SlidingTabActivity()).commitAllowingStateLoss();
             }
         }, 5);
         //Setting Navigation View Item Selected Listener to handle the item click of the navigation menu
@@ -56,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
                         new Handler().postDelayed(new Runnable() {
                             @Override
                             public void run() {
-                                fragmentManager.beginTransaction().replace(R.id.content_frame, new Main2Activity()).commit();
+                                fragmentManager.beginTransaction().replace(R.id.content_frame, new SlidingTabActivity()).commit();
                             }
                         }, 300);
                         return true;

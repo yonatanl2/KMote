@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context=".Main2Activity"
-    android:id="@+id/remote_activity"
     android:layout_width="match_parent"
     android:orientation="vertical"
     android:layout_height="match_parent"
+    tools:context=".Main2Activity"
+    android:id="@+id/remote_activity"
     android:paddingBottom="@dimen/activity_vertical_margin">
-
-
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -16,7 +14,6 @@
         android:textSize="50sp"
         android:layout_centerHorizontal="true"
         android:id="@+id/connect_message"/>
-
     <LinearLayout
         android:layout_marginTop="16dp"
         android:layout_marginEnd="8dp"
@@ -25,7 +22,6 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:id="@+id/layout1">
-
         <ImageButton
             style="?android:attr/buttonBarButtonStyle"
             android:layout_marginEnd="18dp"
@@ -35,7 +31,6 @@
             android:id="@+id/roll_back"
             android:layout_weight="1"
             />
-
         <ImageButton
             style="?android:attr/buttonBarButtonStyle"
             android:layout_marginEnd="18dp"
@@ -45,7 +40,6 @@
             android:id="@+id/stop_button"
             android:layout_weight="1"
             />
-
         <ImageButton
             style="?android:attr/buttonBarButtonStyle"
             android:layout_marginEnd="18dp"
@@ -55,7 +49,6 @@
             android:id="@+id/play_pause_button"
             android:layout_weight="1"
             />
-
         <ImageButton
             style="?android:attr/buttonBarButtonStyle"
             android:layout_width="0dp"
@@ -65,21 +58,18 @@
             android:id="@+id/roll_forward"
             android:layout_weight="1"
             />
-
     </LinearLayout>
 
-
             <RelativeLayout
-                android:layout_marginTop="45dp"
+                android:layout_marginTop="25dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"
+                android:layout_marginBottom="15dp"
                 android:layout_alignParentBottom="true"
                 android:id="@+id/layout_2"
                 android:layout_below="@id/layout1">
 
                 <ImageButton
-
                     style="?android:attr/buttonBarButtonStyle"
                     android:layout_height="150dp"
                     android:layout_width="120dp"
@@ -88,12 +78,8 @@
                     android:layout_centerVertical="true"
 
                     >
-
-
                 </ImageButton>
-
                 <ImageButton
-
                     style="?android:attr/buttonBarButtonStyle"
                     android:layout_height="120dp"
                     android:layout_width="150dp"
@@ -103,22 +89,16 @@
                     android:layout_centerHorizontal="true"
                     android:layout_alignParentTop="true"
                     >
-
-
                 </ImageButton>
-
                 <ImageButton
                     style="?android:attr/buttonBarButtonStyle"
-
                     android:layout_height="150dp"
                     android:layout_width="120dp"
                     android:id="@+id/arrow_button_3"
                     android:layout_centerVertical="true"
                     android:layout_alignParentEnd="true"
                     >
-
                 </ImageButton>
-
                 <ImageButton
                     style="?android:attr/buttonBarButtonStyle"
 
@@ -129,12 +109,7 @@
                     android:layout_centerHorizontal="true"
                     android:layout_alignParentBottom="true"
                     >
-
-
                 </ImageButton>
-
-
-
                 <ImageButton
                     style="?android:attr/buttonBarButtonStyle"
                     android:layout_width="100dp"
@@ -142,12 +117,9 @@
                     android:layout_centerHorizontal="true"
                     android:layout_centerVertical="true"
                     android:id="@+id/select">
-
                 </ImageButton>
 
             </RelativeLayout>
-
-
             <Button
                 style="?android:attr/buttonBarButtonStyle"
                 android:layout_width="wrap_content"
@@ -162,6 +134,5 @@
                 android:layout_alignParentStart="true"
                 android:layout_alignParentBottom="true"
                 android:id="@+id/back_button">
-
             </Button>
 </RelativeLayout>

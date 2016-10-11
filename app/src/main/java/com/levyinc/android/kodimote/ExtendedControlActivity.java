@@ -19,7 +19,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 
-public class Main2Activity extends Fragment {
+public class ExtendedControlActivity extends Fragment {
     View myView;
     private Handler remoteHandler = new Handler();
     boolean upLongPressed = false;
@@ -85,27 +85,27 @@ public class Main2Activity extends Fragment {
 
 
     private Thread playCheck = new Thread(new Runnable() {
-            @Override
-            public void run () {
-                ButtonActions.getInfo();
-                if (ButtonActions.playerInfoGotten()) {
-                    if (connected) {
-                        videoLayout.setVisibility(View.VISIBLE);
-                        connecting.setVisibility(View.INVISIBLE);
-                        if (ButtonActions.isPaused() && playPause.getTag() == "pause") {
-                            playPause.setBackgroundResource(R.drawable.play_button);
-                            playPause.setTag("play");
-                            paused = true;
-                        } else if (!ButtonActions.isPaused() && playPause.getTag() == "play") {
-                            playPause.setBackgroundResource(R.drawable.pause_button);
-                            playPause.setTag("pause");
-                            paused = false;
-                        }
+        @Override
+        public void run () {
+            ButtonActions.getInfo();
+            if (ButtonActions.playerInfoGotten()) {
+                if (connected) {
+                    videoLayout.setVisibility(View.VISIBLE);
+                    connecting.setVisibility(View.INVISIBLE);
+                    if (ButtonActions.isPaused() && playPause.getTag() == "pause") {
+                        playPause.setBackgroundResource(R.drawable.play_button);
+                        playPause.setTag("play");
+                        paused = true;
+                    } else if (!ButtonActions.isPaused() && playPause.getTag() == "play") {
+                        playPause.setBackgroundResource(R.drawable.pause_button);
+                        playPause.setTag("pause");
+                        paused = false;
                     }
                 }
-                remoteHandler.postDelayed(playCheck, 2555);
             }
-        });
+            remoteHandler.postDelayed(playCheck, 2555);
+        }
+    });
 
 
     @Nullable
@@ -321,7 +321,7 @@ public class Main2Activity extends Fragment {
             remoteHandler.postDelayed(playCheck, 100);
         }
     }
-    
+
 
     @Override
     public void onPause() {

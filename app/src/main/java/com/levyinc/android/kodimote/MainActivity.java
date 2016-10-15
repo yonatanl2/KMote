@@ -53,12 +53,13 @@ public class MainActivity extends AppCompatActivity {
                 //Check to see which item was being clicked and perform appropriate action
                 switch (menuItem.getItemId()) {
                     case R.id.nav_main:
-                        new Handler().postDelayed(new Runnable() {
+                        fragmentManager.beginTransaction().replace(R.id.content_frame, new SlidingTabActivity()).commit();
+                        /*new Handler().postDelayed(new Runnable() {
                             @Override
                             public void run() {
                                 fragmentManager.beginTransaction().replace(R.id.content_frame, new SlidingTabActivity()).commit();
                             }
-                        }, 300);
+                        }, 300);*/
                         return true;
 
                     case R.id.nav_settings:

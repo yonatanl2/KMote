@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -645,6 +646,9 @@ class ButtonActions {
 
         @Override
         protected void onPostExecute(Void aVoid) {
+            if (playerInfoGotten()){
+                new AsynchPropertiesGetter().execute();
+            }
             super.onPostExecute(aVoid);
         }
     }
@@ -653,7 +657,14 @@ class ButtonActions {
             new AsynchInfoChecker().execute();
         }
 
-    private static class AsynchPauseChecker extends AsyncTask<Void, Void, Void> {
+    private static class AsynchPropertiesGetter extends AsyncTask<Void, Void, Void> {
+
+
+        StringBuffer jsonString;
+        String properties;
+        JSONObject jsonParam;
+        String jsonParamString;
+
         @Override
         protected Void doInBackground(Void... params) {
             try {
@@ -661,7 +672,7 @@ class ButtonActions {
                 URL url = new URL(request);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-                JSONObject jsonParam = new JSONObject();
+                jsonParam = new JSONObject();
                 jsonParam.put("jsonrpc", "2.0");
                 jsonParam.put("method", "Player.getProperties");
                 jsonParam.put("id", 1);
@@ -671,10 +682,13 @@ class ButtonActions {
                 if (matcher2.find()) {
                     JSONObject jsonParam2 = new JSONObject();
                     jsonParam2.put("playerid", parseInt(matcher2.group()));
-                    jsonParam2.put("properties", "speed");
+                    properties = "[\"speed\", \"time\", \"percentage\", \"subtitles\", \"totaltime\", \"type\"]";
+                    jsonParam2.put("properties", properties);
                     jsonParam.put("params", jsonParam2);
                 }
-                String jsonParamString = (jsonParam.toString().replaceAll("\"speed\"", "[\"speed\"]"));
+                jsonParamString = (jsonParam.toString().replaceAll("\"\\[", "["));
+                jsonParamString = jsonParamString.replaceAll("]\"", "]");
+                jsonParamString = jsonParamString.replaceAll("\\\\", "");
 
                 byte[] bytes = jsonParamString.getBytes("UTF-8");
 
@@ -691,7 +705,7 @@ class ButtonActions {
                 printout.flush();
                 printout.close();
                 BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuffer jsonString = new StringBuffer();
+                jsonString = new StringBuffer();
                 String line;
                 while ((line = br.readLine()) != null) {
                     jsonString.append(line);
@@ -711,16 +725,176 @@ class ButtonActions {
 
         @Override
         protected void onPostExecute(Void aVoid) {
+            System.out.println(jsonString);
+            new AsynchLibraryQuerier().execute();
             super.onPostExecute(aVoid);
         }
     }
 
         static boolean isPaused() {
-            new AsynchPauseChecker().execute();
             return isPaused;
     }
 
     static boolean playerInfoGotten() {
         return !(playerInfo.isEmpty());
     }
+
+
+    private static class AsynchLibraryQuerier extends AsyncTask<Void, Void, Void>{
+
+        StringBuffer jsonString;
+        String jsonParamString;
+
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            try {
+
+                URL url = new URL(request);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+                JSONObject jsonParam = new JSONObject();
+                jsonParam.put("jsonrpc", "2.0");
+                jsonParam.put("method", "Player.getItem");
+                jsonParam.put("id", "VideoGetItem");
+                Pattern pattern2 = Pattern.compile("\\d$");
+                Matcher matcher2 = pattern2.matcher(playerInfo.get(0));
+
+                if (matcher2.find()) {
+                    JSONObject jsonParam2 = new JSONObject();
+                    jsonParam2.put("playerid", parseInt(matcher2.group()));
+                    String properties = "[title\" ,\"album\", \"artist\", \"season\", \"episode\", \"duration\", \"showtitle\", \"tvshowid\", \"thumbnail\", \"file\", \"fanart\", \"streamdetails]";
+                    jsonParam2.put("properties", properties);
+                    jsonParam.put("params", jsonParam2);
+                }
+
+                jsonParamString = (jsonParam.toString().replaceAll("\"\\[" , "[\""));
+                jsonParamString = (jsonParamString.replaceAll("\\]\"" , "\"]"));
+                jsonParamString = (jsonParamString.replaceAll("\\\\",""));
+
+                byte[] bytes = jsonParamString.getBytes("UTF-8");
+
+                conn.setDoOutput(true);
+                conn.setDoInput(true);
+                conn.setUseCaches(false);
+                conn.setFixedLengthStreamingMode(bytes.length);
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Accept", "application/json");
+                conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+                conn.connect();
+                OutputStream printout = conn.getOutputStream();
+                printout.write(bytes);
+                printout.flush();
+                printout.close();
+                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), Charset.forName("UTF8")));
+                jsonString = new StringBuffer();
+                String line;
+                while ((line = br.readLine()) != null) {
+                    jsonString.append(line);
+                }
+
+                br.close();
+                conn.disconnect();
+
+            } catch (IOException | JSONException exception) {
+                exception.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            System.out.println(jsonParamString);
+            System.out.println(jsonString);
+            Pattern imagePattern = Pattern.compile("(?<=image://)http.*(?=/\")");
+            Matcher imageMatcher = imagePattern.matcher(jsonString);
+            if (imageMatcher.find()){
+                System.out.println(imageMatcher.group());
+            }
+            Pattern seasonPattern = Pattern.compile("(?<=season\":)\\d*");
+            Matcher seasonMatcher = seasonPattern.matcher(jsonString);
+            if (seasonMatcher.find()){
+                System.out.println(seasonMatcher.group());
+            }
+
+            Pattern episodePattern = Pattern.compile("(?<=episode\":)\\d*");
+            Matcher episodeMatcher = episodePattern.matcher(jsonString);
+            if (episodeMatcher.find()) {
+                System.out.println(episodeMatcher.group());
+            }
+
+            Pattern showPattern = Pattern.compile("(?<=showtitle\":).*(?=,\"stream)");
+            Matcher showMatcher = showPattern.matcher(jsonString);
+
+            if (episodeMatcher.find()) {
+                System.out.println(showMatcher.group());
+            }
+
+            Pattern episodeNamePattern = Pattern.compile("(?<=label\":\").*(?=\",\"season)");
+            Matcher episodeNameMatcher = episodeNamePattern.matcher(jsonString);
+            if (episodeNameMatcher.find()){
+                System.out.println(episodeNameMatcher.group());
+            }
+
+            super.onPostExecute(aVoid);
+        }
+    }
+
+
+    private static class AsyncSubtitleMenu extends AsyncTask<Void, Void, Void>{
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            try {
+
+                URL url = new URL(request);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+                JSONObject jsonParam = new JSONObject();
+                jsonParam.put("jsonrpc", "2.0");
+                jsonParam.put("method", "GUI.ActivateWindow");
+                jsonParam.put("id", 1);
+
+                JSONObject jsonParam2 = new JSONObject();
+                jsonParam2.put("window", "subtitlesearch");
+
+                jsonParam.put("params", jsonParam2);
+
+                byte[] bytes = jsonParam.toString().getBytes("UTF-8");
+
+                conn.setDoOutput(true);
+                conn.setDoInput(true);
+                conn.setUseCaches(false);
+                conn.setFixedLengthStreamingMode(bytes.length);
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Accept", "application/json");
+                conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+                conn.connect();
+                OutputStream printout = conn.getOutputStream();
+                printout.write(bytes);
+                printout.flush();
+                printout.close();
+                conn.disconnect();
+
+            } catch (IOException | JSONException exception) {
+                exception.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            SlidingTabActivity.viewPager.setCurrentItem(1, true);
+            super.onPostExecute(aVoid);
+
+        }
+    }
+
+
+    static void getSubs() {
+        new AsyncSubtitleMenu().execute();
+    }
+
 }
+
+

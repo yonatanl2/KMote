@@ -10,9 +10,11 @@
         <android.support.design.widget.TabLayout
             android:layout_width="match_parent"
             android:layout_height="30dp"
+            android:elevation="2dp"
+            android:background="@color/colorPrimary"
             app:tabTextColor="@android:color/white"
             app:tabIndicatorColor="@color/colorPrimaryDark"
-            app:tabBackground="@color/colorPrimary"
+            app:tabBackground="?attr/selectableItemBackground"
             android:id="@+id/remote_tab_layout">
 
         </android.support.design.widget.TabLayout>

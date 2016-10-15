@@ -1,6 +1,96 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
-    android:layout_height="match_parent">
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+   >
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="0"/>
+
+    <ImageView
+        android:layout_weight="1"
+        android:layout_width="match_parent"
+        android:layout_height="0dp" />
+
+    <RelativeLayout
+        android:layout_weight="2"
+        android:layout_width="match_parent"
+        android:layout_height="0dp">
+
+        <TextView
+            android:layout_width="190dp"
+            android:layout_height="35dp"
+            android:layout_marginTop="8dp"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:textAlignment="center"
+            android:id="@+id/currently_playing_extended"
+            />
+
+
+        <LinearLayout
+            android:layout_marginTop="20dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_below="@id/currently_playing_extended"
+            android:id="@+id/layout1">
+
+            <ImageButton
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_marginEnd="18dp"
+                android:layout_marginStart="18dp"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:id="@+id/roll_back"
+                android:layout_weight="1"
+                />
+            <ImageButton
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_marginEnd="18dp"
+                android:layout_marginStart="18dp"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:id="@+id/stop_button"
+                android:layout_weight="1"
+                />
+            <ImageButton
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_marginEnd="18dp"
+                android:layout_marginStart="18dp"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:id="@+id/play_pause_button"
+                android:layout_weight="1"
+                />
+            <ImageButton
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_marginEnd="18dp"
+                android:layout_marginStart="18dp"
+                android:id="@+id/roll_forward"
+                android:layout_weight="1"
+                />
+        </LinearLayout>
+
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/currently_playing_extended"
+            android:text="Subtitles"
+            android:id="@+id/subtitle_button"
+            android:textColor="@android:color/black"/>
+
+    </RelativeLayout>
+
 
 </LinearLayout>

@@ -15,7 +15,7 @@ import android.view.ViewGroup;
 
 public class SlidingTabActivity extends android.support.v4.app.Fragment {
 
-    private ViewPager viewPager;
+    public static ViewPager viewPager;
     private TabLayout tabLayout;
 
     FragmentAdapterClass fragmentPagerAdapter;
@@ -29,16 +29,15 @@ public class SlidingTabActivity extends android.support.v4.app.Fragment {
         rootView = inflater.inflate(R.layout.remote_tab_viewer, container, false);
 
 
-
         viewPager = (ViewPager) rootView.findViewById(R.id.remote_page_viewer);
         tabLayout = (TabLayout) rootView.findViewById(R.id.remote_tab_layout);
 
 
-        String [] tabs = getResources().getStringArray(R.array.tabs);
+        String[] tabs = getResources().getStringArray(R.array.tabs);
 
         tabLayout.addTab(tabLayout.newTab().setText(tabs[0]));
         tabLayout.addTab(tabLayout.newTab().setText(tabs[1]));
-     //   tabLayout.addTab(tabLayout.newTab().setText(tabs[2]));
+        tabLayout.addTab(tabLayout.newTab().setText(tabs[2]));
 
         tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
 
@@ -72,7 +71,9 @@ public class SlidingTabActivity extends android.support.v4.app.Fragment {
 
             }
         });
-    }
+        viewPager.setCurrentItem(1);
 }
+}
+
 
 

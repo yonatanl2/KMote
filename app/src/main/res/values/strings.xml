@@ -25,8 +25,8 @@
 
     <string name="pref_title_add_friends_to_messages">Add friends to messages</string>
     <string-array name="tabs">
+        <item>Extended Controls</item>
         <item>Remote</item>
-        <item>Currently Playing</item>
         <item>Playlists</item>
     </string-array>
     <string-array name="pref_example_list_values">

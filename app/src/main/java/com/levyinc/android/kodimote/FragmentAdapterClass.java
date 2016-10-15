@@ -9,9 +9,7 @@ public class FragmentAdapterClass extends FragmentStatePagerAdapter {
     int TabCount;
 
     public FragmentAdapterClass(FragmentManager fragmentManager, int CountTabs) {
-
         super(fragmentManager);
-
         this.TabCount = CountTabs;
     }
 
@@ -20,12 +18,18 @@ public class FragmentAdapterClass extends FragmentStatePagerAdapter {
 
         switch (position) {
             case 0:
-                Main2Activity tab1 = new Main2Activity();
+                ExtendedControlActivity tab1 = new ExtendedControlActivity();
                 return tab1;
 
             case 1:
-                ExtendedControlActivity tab2 = new ExtendedControlActivity();
+
+                Main2Activity tab2 = new Main2Activity();
                 return tab2;
+
+
+            case 2:
+                PlaylistActivity tab3 = new PlaylistActivity();
+                return tab3;
 
             default:
                 return null;

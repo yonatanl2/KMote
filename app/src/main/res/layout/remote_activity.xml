@@ -14,14 +14,24 @@
         android:textSize="50sp"
         android:layout_centerHorizontal="true"
         android:id="@+id/connect_message"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentTop="true"
+        android:textSize="15sp"
+        android:id="@+id/currently_playing"/>
+
     <LinearLayout
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="20dp"
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:id="@+id/layout1">
+
         <ImageButton
             style="?android:attr/buttonBarButtonStyle"
             android:layout_marginEnd="18dp"
@@ -61,7 +71,7 @@
     </LinearLayout>
 
             <RelativeLayout
-                android:layout_marginTop="25dp"
+                android:layout_marginTop="22dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="15dp"

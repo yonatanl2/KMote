@@ -102,6 +102,9 @@ public class Main2Activity extends Fragment {
                             paused = false;
                         }
                     }
+                } else {
+                    videoLayout.setVisibility(View.INVISIBLE);
+                    connecting.setVisibility(View.VISIBLE);
                 }
                 remoteHandler.postDelayed(playCheck, 2555);
             }
@@ -164,10 +167,10 @@ public class Main2Activity extends Fragment {
             public void run() {
                 if (upLongPressed) {
                     ButtonActions.up();
-                    remoteHandler.postDelayed(new RepetitiveActions(), 35);
+                    remoteHandler.postDelayed(new RepetitiveActions(), 120);
                 } else if (downLongPressed) {
                     ButtonActions.down();
-                    remoteHandler.postDelayed(new RepetitiveActions(), 35);
+                    remoteHandler.postDelayed(new RepetitiveActions(), 120);
                 }
             }
         }

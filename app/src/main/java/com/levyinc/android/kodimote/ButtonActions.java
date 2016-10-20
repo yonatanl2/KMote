@@ -1,5 +1,7 @@
 package com.levyinc.android.kodimote;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 
 import org.json.JSONException;
@@ -11,6 +13,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
@@ -21,20 +24,27 @@ import static java.lang.Integer.parseInt;
 
 class ButtonActions {
 
-    public static boolean status = false;
+    private static boolean status = false;
     private static String request;
-    public static ArrayList<String> playerInfo = new ArrayList<>();
+    private static ArrayList<String> playerInfo = new ArrayList<>();
+    private static ArrayList<String> videoDetailArray = new ArrayList<>();
+    private static ArrayList<Bitmap> bitmapArrayList = new ArrayList<>();
     private static int speed = 1;
     private static boolean isPaused = false;
 
 
-    private static class AsynchConnect extends AsyncTask <Void, Void, Integer> {
+    static boolean getStatus() {
+        return status;
+    }
+
+
+    private static class AsynchConnect extends AsyncTask <Void, Void, Boolean> {
 
         private Integer respCode;
 
 
         @Override
-        protected Integer doInBackground(Void... params) {
+        protected Boolean doInBackground(Void... params) {
                     try {
                         URL url = new URL(request);
                         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -42,11 +52,7 @@ class ButtonActions {
                         conn.setRequestMethod("POST");
                         conn.setRequestProperty("Content-Type", "application/json");
                         respCode = conn.getResponseCode();
-                        if (respCode == 200) {
-                            status = true;
-                        } else {
-                            status = false;
-                        }
+                        status = (respCode == 200);
                     } catch (IOException exception) {
                         String stringException = exception.toString();
                         System.out.println(stringException);
@@ -54,14 +60,12 @@ class ButtonActions {
                             status = false;
                         }
                     }
-            return 1;
+            return status;
         }
 
         @Override
-        protected void onPostExecute(Integer integer) {
-            super.onPostExecute(integer);
-            Main2Activity.statusUpdater(status);
-
+        protected void onPostExecute(Boolean aBoolean) {
+            super.onPostExecute(aBoolean);
         }
     }
 
@@ -87,7 +91,16 @@ class ButtonActions {
     private static class AsynchFastForward extends AsyncTask<Void, Void, Void> {
         @Override
         protected Void doInBackground(Void... params) {
-            speed = speed * 2;
+            if (speed == 0) {
+                speed = 2;
+            } else if (speed == -(2)) {
+                speed = 1;
+            } else if (speed >= 1 && speed < 36) {
+                speed = speed * 2;
+            } else if (speed < 0 ) {
+                speed = speed / 2;
+            }
+
             try {
                 URL url = new URL(request);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -125,18 +138,18 @@ class ButtonActions {
                 printout.flush();
                 printout.close();
                 System.out.println(jsonParam.toString());
-                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuffer jsonString = new StringBuffer();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    jsonString.append(line);
-                }
-                br.close();
                 conn.disconnect();
             } catch (IOException | JSONException exception) {
                 exception.printStackTrace();
             }
             return null;
+        }
+
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            System.out.println(speed);
+            super.onPostExecute(aVoid);
         }
     }
 
@@ -147,10 +160,14 @@ class ButtonActions {
     private static class AsynchRollBack extends AsyncTask<Void, Void, Void> {
         @Override
         protected Void doInBackground(Void... params) {
-            if (speed > 1) {
+            if (speed == 0) {
+                speed = -(2);
+            } else if (speed > 1) {
                 speed = speed / 2;
-            } else if (speed <= 1) {
+            } else if (speed == 1) {
                 speed = speed * (-2);
+            } else if (speed > (-36)) {
+                speed = speed * 2;
             }
 
             try {
@@ -187,13 +204,6 @@ class ButtonActions {
                 printout.write(bytes);
                 printout.flush();
                 printout.close();
-                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuffer jsonString = new StringBuffer();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    jsonString.append(line);
-                }
-                br.close();
                 conn.disconnect();
             } catch (IOException | JSONException exception) {
                 exception.printStackTrace();
@@ -210,50 +220,45 @@ class ButtonActions {
         @Override
         protected Void doInBackground(Void... params) {
             speed = 1;
-            try {
-                URL url = new URL(request);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            if (!playerInfo.isEmpty()) {
+                try {
+                    URL url = new URL(request);
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-                JSONObject jsonParam = new JSONObject();
-                jsonParam.put("jsonrpc", "2.0");
-                jsonParam.put("method", "Player.PlayPause");
-                jsonParam.put("id", 1);
-                Pattern pattern2 = Pattern.compile("\\d$");
-                Matcher matcher2 = pattern2.matcher(playerInfo.get(0));
+                    JSONObject jsonParam = new JSONObject();
+                    jsonParam.put("jsonrpc", "2.0");
+                    jsonParam.put("method", "Player.PlayPause");
+                    jsonParam.put("id", 1);
+                    Pattern pattern2 = Pattern.compile("\\d$");
+                    Matcher matcher2 = pattern2.matcher(playerInfo.get(0));
 
-                if (matcher2.find()) {
-                    JSONObject jsonParam2 = new JSONObject();
-                    jsonParam2.put("playerid", parseInt(matcher2.group()));
-                    jsonParam.put("params", jsonParam2);
+                    if (matcher2.find()) {
+                        JSONObject jsonParam2 = new JSONObject();
+                        jsonParam2.put("playerid", parseInt(matcher2.group()));
+                        jsonParam.put("params", jsonParam2);
+                    }
+                    byte[] bytes = jsonParam.toString().getBytes("UTF-8");
+
+                    conn.setDoOutput(true);
+                    conn.setDoInput(true);
+                    conn.setUseCaches(false);
+                    conn.setFixedLengthStreamingMode(bytes.length);
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Accept", "application/json");
+                    conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+                    conn.connect();
+
+
+                    OutputStream printout = conn.getOutputStream();
+                    printout.write(bytes);
+                    printout.flush();
+                    printout.close();
+                    conn.disconnect();
+                } catch (IOException | JSONException exception) {
+                    exception.printStackTrace();
                 }
-                byte[] bytes = jsonParam.toString().getBytes("UTF-8");
+            }                 return null;
 
-                conn.setDoOutput(true);
-                conn.setDoInput(true);
-                conn.setUseCaches(false);
-                conn.setFixedLengthStreamingMode(bytes.length);
-                conn.setRequestMethod("POST");
-                conn.setRequestProperty("Accept", "application/json");
-                conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-                conn.connect();
-
-
-                OutputStream printout = conn.getOutputStream();
-                printout.write(bytes);
-                printout.flush();
-                printout.close();
-                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuffer jsonString = new StringBuffer();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    jsonString.append(line);
-                }
-                br.close();
-                conn.disconnect();
-            } catch (IOException | JSONException exception) {
-                exception.printStackTrace();
-            }
-            return null;
         }
     }
 
@@ -299,13 +304,6 @@ class ButtonActions {
                 printout.write(bytes);
                 printout.flush();
                 printout.close();
-                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuffer jsonString = new StringBuffer();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    jsonString.append(line);
-                }
-                br.close();
                 conn.disconnect();
             } catch (IOException | JSONException exception) {
                 exception.printStackTrace();
@@ -344,13 +342,6 @@ class ButtonActions {
                 printout.write(bytes);
                 printout.flush();
                 printout.close();
-                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuffer jsonString = new StringBuffer();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    jsonString.append(line);
-                }
-                br.close();
                 conn.disconnect();
             } catch (IOException | JSONException exception) {
                 exception.printStackTrace();
@@ -390,13 +381,6 @@ class ButtonActions {
                 printout.write(bytes);
                 printout.flush();
                 printout.close();
-                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuffer jsonString = new StringBuffer();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    jsonString.append(line);
-                }
-                br.close();
                 conn.disconnect();
             } catch (IOException | JSONException exception) {
                 exception.printStackTrace();
@@ -436,14 +420,6 @@ class ButtonActions {
                 printout.write(bytes);
                 printout.flush();
                 printout.close();
-                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuffer jsonString = new StringBuffer();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    jsonString.append(line);
-                }
-                br.close();
-                conn.disconnect();
             } catch (IOException | JSONException exception) {
                 exception.printStackTrace();
             }
@@ -481,13 +457,6 @@ class ButtonActions {
                 printout.write(bytes);
                 printout.flush();
                 printout.close();
-                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuffer jsonString = new StringBuffer();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    jsonString.append(line);
-                }
-                br.close();
                 conn.disconnect();
             } catch (IOException | JSONException exception) {
                 exception.printStackTrace();
@@ -525,14 +494,8 @@ class ButtonActions {
                 printout.write(bytes);
                 printout.flush();
                 printout.close();
-                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuffer jsonString = new StringBuffer();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    jsonString.append(line);
-                }
-                br.close();
                 conn.disconnect();
+
             } catch (IOException | JSONException exception) {
                 exception.printStackTrace();
             }
@@ -572,13 +535,6 @@ class ButtonActions {
                 printout.write(bytes);
                 printout.flush();
                 printout.close();
-                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuffer jsonString = new StringBuffer();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    jsonString.append(line);
-                }
-                br.close();
                 conn.disconnect();
             } catch (IOException | JSONException exception) {
                 exception.printStackTrace();
@@ -661,7 +617,6 @@ class ButtonActions {
 
 
         StringBuffer jsonString;
-        String properties;
         JSONObject jsonParam;
         String jsonParamString;
 
@@ -682,7 +637,7 @@ class ButtonActions {
                 if (matcher2.find()) {
                     JSONObject jsonParam2 = new JSONObject();
                     jsonParam2.put("playerid", parseInt(matcher2.group()));
-                    properties = "[\"speed\", \"time\", \"percentage\", \"subtitles\", \"totaltime\", \"type\"]";
+                    String properties = "[\"speed\", \"time\", \"percentage\", \"subtitles\", \"totaltime\", \"type\"]";
                     jsonParam2.put("properties", properties);
                     jsonParam.put("params", jsonParam2);
                 }
@@ -712,11 +667,7 @@ class ButtonActions {
                 }
                 br.close();
                 conn.disconnect();
-                if (jsonString.toString().contains("{\"speed\":1}")) {
-                    isPaused = false;
-                } else {
-                    isPaused = true;
-                }
+                isPaused = !(jsonString.toString().contains("\"speed\":1"));
             } catch (IOException | JSONException exception) {
                 exception.printStackTrace();
             }
@@ -745,9 +696,12 @@ class ButtonActions {
         StringBuffer jsonString;
         String jsonParamString;
 
-
         @Override
         protected Void doInBackground(Void... params) {
+
+            videoDetailArray = new ArrayList<>();
+            bitmapArrayList = new ArrayList<>();
+
             try {
 
                 URL url = new URL(request);
@@ -763,7 +717,7 @@ class ButtonActions {
                 if (matcher2.find()) {
                     JSONObject jsonParam2 = new JSONObject();
                     jsonParam2.put("playerid", parseInt(matcher2.group()));
-                    String properties = "[title\" ,\"album\", \"artist\", \"season\", \"episode\", \"duration\", \"showtitle\", \"tvshowid\", \"thumbnail\", \"file\", \"fanart\", \"streamdetails]";
+                    String properties = "[plot\", \"rating\", \"art\", \"title\" ,\"album\", \"artist\", \"season\", \"episode\", \"duration\", \"showtitle\", \"tvshowid\", \"thumbnail\", \"file\", \"fanart\", \"streamdetails]";
                     jsonParam2.put("properties", properties);
                     jsonParam.put("params", jsonParam2);
                 }
@@ -799,6 +753,39 @@ class ButtonActions {
             } catch (IOException | JSONException exception) {
                 exception.printStackTrace();
             }
+
+            Pattern seriesImagePattern = Pattern.compile("(?<=\"poster\":\"image://)http.*(?=/\",\"season)");
+            Matcher seriesMatch = seriesImagePattern.matcher(jsonString);
+            if (seriesMatch.find()){
+                try {
+                    URL url = new URL(URLDecoder.decode(seriesMatch.group(), "UTF-8"));
+                    Bitmap decodedImage = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+                    bitmapArrayList.add(decodedImage);
+                } catch (IOException exception) {
+                    exception.printStackTrace();
+                }
+
+
+            } else {
+                bitmapArrayList.add(null);
+            }
+
+            Pattern imagePattern = Pattern.compile("(?<=thumbnail\":\"image://)http.*(?=/\")");
+            Matcher imageMatcher = imagePattern.matcher(jsonString);
+
+
+            if (imageMatcher.find()){
+                try {
+                    URL url = new URL(URLDecoder.decode(imageMatcher.group(),"UTF-8"));
+                    Bitmap decodedImage2 = BitmapFactory.decodeStream(url.openStream());
+                    bitmapArrayList.add(decodedImage2);
+                } catch (IOException exception) {
+                    exception.printStackTrace();
+                }
+            } else {
+                bitmapArrayList.add(null);
+            }
+
             return null;
         }
 
@@ -806,34 +793,64 @@ class ButtonActions {
         protected void onPostExecute(Void aVoid) {
             System.out.println(jsonParamString);
             System.out.println(jsonString);
-            Pattern imagePattern = Pattern.compile("(?<=image://)http.*(?=/\")");
-            Matcher imageMatcher = imagePattern.matcher(jsonString);
-            if (imageMatcher.find()){
-                System.out.println(imageMatcher.group());
+            System.out.println(videoDetailArray);
+            System.out.println(bitmapArrayList);
+
+
+            Pattern seriesImagePattern = Pattern.compile("(?<=\"poster\":\"image://)http.*(?=/\",\"season)");
+            Matcher seriesMatch = seriesImagePattern.matcher(jsonString);
+            if (seriesMatch.find()) {
+                try {
+                    String temp = URLDecoder.decode(seriesMatch.group(), "UTF-8");
+                    System.out.println(temp);
+                } catch (IOException exception) {
+                    exception.printStackTrace();
+                }
             }
+
             Pattern seasonPattern = Pattern.compile("(?<=season\":)\\d*");
             Matcher seasonMatcher = seasonPattern.matcher(jsonString);
             if (seasonMatcher.find()){
-                System.out.println(seasonMatcher.group());
+              //  System.out.println(seasonMatcher.group());
             }
 
             Pattern episodePattern = Pattern.compile("(?<=episode\":)\\d*");
             Matcher episodeMatcher = episodePattern.matcher(jsonString);
             if (episodeMatcher.find()) {
-                System.out.println(episodeMatcher.group());
+             //   System.out.println(episodeMatcher.group());
             }
 
-            Pattern showPattern = Pattern.compile("(?<=showtitle\":).*(?=,\"stream)");
+            Pattern showPattern = Pattern.compile("(?<=showtitle\":\").*(?=\",\"stream)");
             Matcher showMatcher = showPattern.matcher(jsonString);
 
-            if (episodeMatcher.find()) {
-                System.out.println(showMatcher.group());
+            if (showMatcher.find()) {
+              //  System.out.println(showMatcher.group());
             }
 
-            Pattern episodeNamePattern = Pattern.compile("(?<=label\":\").*(?=\",\"season)");
+            Pattern episodeNamePattern = Pattern.compile("(?<=label\":\").*(?=\",\"plot)");
             Matcher episodeNameMatcher = episodeNamePattern.matcher(jsonString);
             if (episodeNameMatcher.find()){
-                System.out.println(episodeNameMatcher.group());
+             //   System.out.println(episodeNameMatcher.group());
+            }
+
+            Pattern plotPattern = Pattern.compile("(?<=plot\":\").*(?=\",\"rating)");
+            Matcher plotMatcher = plotPattern.matcher(jsonString);
+            if (plotMatcher.find()) {
+              //  System.out.println(plotMatcher.group());
+            }
+
+            if (showMatcher.find()){
+                if (episodeMatcher.find()) {
+                    videoDetailArray.add(showMatcher.group() + ": " + episodeNameMatcher.group());
+                } else {
+                    videoDetailArray.add(showMatcher.group());
+                }
+            } else if (episodeMatcher.find()) {
+                videoDetailArray.add(episodeNameMatcher.group());
+            }
+
+            if (seasonMatcher.find() && episodeMatcher.find()) {
+                videoDetailArray.add("Season: " + seasonMatcher.group() + "Episode: " + episodeMatcher.group());
             }
 
             super.onPostExecute(aVoid);
@@ -890,6 +907,20 @@ class ButtonActions {
         }
     }
 
+    static boolean extendedInfoGotten() {
+        return !(bitmapArrayList.isEmpty());
+    }
+
+
+    static ArrayList<String> getExtendedInfoStrings(){
+        return videoDetailArray;
+
+    }
+
+    static ArrayList<Bitmap> getExtendedInfoBitmaps(){
+        return bitmapArrayList;
+
+    }
 
     static void getSubs() {
         new AsyncSubtitleMenu().execute();

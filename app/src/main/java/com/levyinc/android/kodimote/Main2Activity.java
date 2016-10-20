@@ -27,9 +27,10 @@ public class Main2Activity extends Fragment {
     boolean leftLongPressed = false;
     boolean rightLongPressed = false;
     boolean paused = false;
+    static boolean gotInfo = false;
 
     LinearLayout videoLayout;
-    static TextView connecting;
+    TextView connecting;
     SharedPreferences sharedPreferences;
     ImageButton playPause;
     ImageButton select;
@@ -40,8 +41,6 @@ public class Main2Activity extends Fragment {
     ImageButton stop;
     ImageButton rollBack;
     ImageButton fastForward;
-    static boolean connected = false;
-
 
     Thread scalingThread = new Thread(new Runnable() {
         @Override
@@ -61,6 +60,16 @@ public class Main2Activity extends Fragment {
         }
     });
 
+    private Runnable statusChecker = new Runnable() {
+        public void run() {
+            if (ButtonActions.getStatus()) {
+                connecting.setText("Connected");
+            } else {
+                remoteHandler.postDelayed(connectionThread, 1000);
+            }
+        }
+    };
+
 
     private Thread connectionThread = new Thread(new Runnable() {
         @Override
@@ -71,44 +80,56 @@ public class Main2Activity extends Fragment {
                 if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
                     connecting.setVisibility(View.VISIBLE);
                     ButtonActions.connect(sharedPreferences.getString("input_ip", ""), sharedPreferences.getString("input_port", ""));
+                    if (ButtonActions.getStatus()) {
+                        connecting.setText("Connected");
+                    } else {
+                        remoteHandler.postDelayed(statusChecker, 1000);
+                    }
                 }
             }
         }
     });
 
-    public static void statusUpdater(boolean connection) {
-        if (connection) {
-            connected = true;
-            connecting.setText("Connected");
-        }
-    }
 
 
     private Thread playCheck = new Thread(new Runnable() {
             @Override
             public void run () {
-                ButtonActions.getInfo();
-                if (ButtonActions.playerInfoGotten()) {
-                    if (connected) {
+                if (ButtonActions.getStatus()) {
+                    if (gotInfo) {
                         videoLayout.setVisibility(View.VISIBLE);
                         connecting.setVisibility(View.INVISIBLE);
                         if (ButtonActions.isPaused() && playPause.getTag() == "pause") {
                             playPause.setBackgroundResource(R.drawable.play_button);
                             playPause.setTag("play");
                             paused = true;
-                        } else if (!ButtonActions.isPaused() && playPause.getTag() == "play") {
+                        } else if (!(ButtonActions.isPaused()) && playPause.getTag() == "play") {
                             playPause.setBackgroundResource(R.drawable.pause_button);
                             playPause.setTag("pause");
                             paused = false;
                         }
+                    } else {
+                        videoLayout.setVisibility(View.INVISIBLE);
+                        connecting.setVisibility(View.VISIBLE);
                     }
-                } else {
-                    videoLayout.setVisibility(View.INVISIBLE);
-                    connecting.setVisibility(View.VISIBLE);
                 }
-                remoteHandler.postDelayed(playCheck, 2555);
+                remoteHandler.postDelayed(playCheck, 4000);
             }
         });
+
+    private Runnable infoChecker = new Runnable() {
+        @Override
+        public void run() {
+            ButtonActions.getInfo();
+                if (ButtonActions.playerInfoGotten()) {
+                    gotInfo = true;
+                    remoteHandler.postDelayed(playCheck, 500);
+            } else if (!(ButtonActions.playerInfoGotten())) {
+                    gotInfo = false;
+                }
+            remoteHandler.postDelayed(infoChecker, 2000);
+        }
+    };
 
 
     @Nullable
@@ -140,6 +161,7 @@ public class Main2Activity extends Fragment {
 
         remoteHandler.post(scalingThread);
         remoteHandler.postDelayed(connectionThread, 100);
+        remoteHandler.postDelayed(infoChecker, 300);
         remoteHandler.postDelayed(playCheck, 500);
 
         sharedPreferences = getActivity().getSharedPreferences("connection_info", Context.MODE_PRIVATE);
@@ -167,10 +189,10 @@ public class Main2Activity extends Fragment {
             public void run() {
                 if (upLongPressed) {
                     ButtonActions.up();
-                    remoteHandler.postDelayed(new RepetitiveActions(), 120);
+                    remoteHandler.postDelayed(new RepetitiveActions(), 50);
                 } else if (downLongPressed) {
                     ButtonActions.down();
-                    remoteHandler.postDelayed(new RepetitiveActions(), 120);
+                    remoteHandler.postDelayed(new RepetitiveActions(), 50);
                 }
             }
         }
@@ -186,7 +208,7 @@ public class Main2Activity extends Fragment {
             @Override
             public boolean onLongClick(View v) {
                 upLongPressed = true;
-                remoteHandler.post(new RepetitiveActions());
+                remoteHandler.postDelayed(new RepetitiveActions(), 120);
                 return true;
             }
         });
@@ -210,7 +232,7 @@ public class Main2Activity extends Fragment {
             @Override
             public boolean onLongClick(View view) {
                 downLongPressed = true;
-                remoteHandler.post(new RepetitiveActions());
+                remoteHandler.postDelayed(new RepetitiveActions(), 120);
                 return false;
             }
         });
@@ -234,7 +256,7 @@ public class Main2Activity extends Fragment {
             @Override
             public boolean onLongClick(View view) {
                 leftLongPressed = true;
-                remoteHandler.post(new RepetitiveActions());
+                remoteHandler.postDelayed(new RepetitiveActions(), 120);
                 return false;
             }
         });
@@ -258,7 +280,7 @@ public class Main2Activity extends Fragment {
             @Override
             public boolean onLongClick(View view) {
                 rightLongPressed = true;
-                remoteHandler.post(new RepetitiveActions());
+                remoteHandler.postDelayed(new RepetitiveActions(), 120);
                 return false;
             }
         });
@@ -279,15 +301,6 @@ public class Main2Activity extends Fragment {
             public void onClick(View view){
                 ButtonActions.playPause();
                 paused = !paused;
-                if (paused) {
-                    playPause.setBackgroundResource(R.drawable.play_button);
-                    playPause.setTag("play");
-                } else {
-                    playPause.setBackgroundResource(R.drawable.pause_button);
-                    playPause.setTag("pause");
-
-                }
-
             }
         });
 
@@ -321,6 +334,7 @@ public class Main2Activity extends Fragment {
         super.onResume();
         if (sharedPreferences.getString("successful_connection", "").equals("y")) {
             remoteHandler.postDelayed(connectionThread, 50);
+            remoteHandler.postDelayed(infoChecker, 70);
             remoteHandler.postDelayed(playCheck, 100);
         }
     }

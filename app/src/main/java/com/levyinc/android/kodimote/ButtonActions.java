@@ -3,6 +3,7 @@ package com.levyinc.android.kodimote;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
+import android.os.Handler;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -16,9 +17,11 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.lang.Integer.getInteger;
 import static java.lang.Integer.parseInt;
 
 
@@ -27,10 +30,15 @@ class ButtonActions {
     private static boolean status = false;
     private static String request;
     private static ArrayList<String> playerInfo = new ArrayList<>();
-    private static ArrayList<String> videoDetailArray = new ArrayList<>();
     private static ArrayList<Bitmap> bitmapArrayList = new ArrayList<>();
+    private static ArrayList<Integer> videoDetailsNums = new ArrayList<>();
+    private static String videoDetails;
+    private static Long contentTime;
+    private static Long elaspedTime;
     private static int speed = 1;
     private static boolean isPaused = false;
+    private static String plot = null;
+    public static Handler buttonActionsHandler = new Handler();
 
 
     static boolean getStatus() {
@@ -40,9 +48,6 @@ class ButtonActions {
 
     private static class AsynchConnect extends AsyncTask <Void, Void, Boolean> {
 
-        private Integer respCode;
-
-
         @Override
         protected Boolean doInBackground(Void... params) {
                     try {
@@ -51,8 +56,7 @@ class ButtonActions {
                         conn.setDoOutput(true);
                         conn.setRequestMethod("POST");
                         conn.setRequestProperty("Content-Type", "application/json");
-                        respCode = conn.getResponseCode();
-                        status = (respCode == 200);
+                        status = (conn.getResponseCode() == 200);
                     } catch (IOException exception) {
                         String stringException = exception.toString();
                         System.out.println(stringException);
@@ -61,11 +65,6 @@ class ButtonActions {
                         }
                     }
             return status;
-        }
-
-        @Override
-        protected void onPostExecute(Boolean aBoolean) {
-            super.onPostExecute(aBoolean);
         }
     }
 
@@ -622,6 +621,7 @@ class ButtonActions {
 
         @Override
         protected Void doInBackground(Void... params) {
+            isPaused = !isPaused;
             try {
 
                 URL url = new URL(request);
@@ -667,7 +667,42 @@ class ButtonActions {
                 }
                 br.close();
                 conn.disconnect();
+
                 isPaused = !(jsonString.toString().contains("\"speed\":1"));
+
+                Pattern totalTimePattern = Pattern.compile("(?<=totaltime\":\\{\").*(?=\\},\")");
+                Matcher totalTimeMatcher = totalTimePattern.matcher(jsonString);
+
+                Pattern elaspedTimePattern = Pattern.compile("(?<=time\":\\{\").*(?=\\},\")");
+                Matcher elaspedTimeMatcher = elaspedTimePattern.matcher(jsonString);
+
+                if (totalTimeMatcher.find()) {
+                    Pattern timePattern = Pattern.compile("\\d+");
+                    Matcher timeMatcher = timePattern.matcher(totalTimeMatcher.group());
+
+                    ArrayList<Integer> timeArray = new ArrayList<>();
+                    while (timeMatcher.find()){
+                        timeArray.add(parseInt(timeMatcher.group()));
+                    }
+                    if (timeArray.toArray().length > 0) {
+                        contentTime = TimeUnit.MILLISECONDS.convert(timeArray.get(0), TimeUnit.HOURS) +
+                                TimeUnit.MILLISECONDS.convert(timeArray.get(2), TimeUnit.MINUTES) +
+                                TimeUnit.MILLISECONDS.convert(timeArray.get(3), TimeUnit.SECONDS);
+                    }
+                    if (elaspedTimeMatcher.find()) {
+                        timeMatcher = timePattern.matcher(elaspedTimeMatcher.group());
+
+                        timeArray = new ArrayList<>();
+                        while (timeMatcher.find()){
+                            timeArray.add(parseInt(timeMatcher.group()));
+                        }
+                        if (timeArray.toArray().length > 0) {
+                            elaspedTime = TimeUnit.MILLISECONDS.convert(timeArray.get(0), TimeUnit.HOURS) +
+                                    TimeUnit.MILLISECONDS.convert(timeArray.get(2), TimeUnit.MINUTES) +
+                                    TimeUnit.MILLISECONDS.convert(timeArray.get(3), TimeUnit.SECONDS);
+                        }
+                    }
+                }
             } catch (IOException | JSONException exception) {
                 exception.printStackTrace();
             }
@@ -678,6 +713,12 @@ class ButtonActions {
         protected void onPostExecute(Void aVoid) {
             System.out.println(jsonString);
             new AsynchLibraryQuerier().execute();
+            buttonActionsHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    new AsynchPropertiesGetter().execute();
+                }
+            }, 1500);
             super.onPostExecute(aVoid);
         }
     }
@@ -693,14 +734,12 @@ class ButtonActions {
 
     private static class AsynchLibraryQuerier extends AsyncTask<Void, Void, Void>{
 
-        StringBuffer jsonString;
-        String jsonParamString;
-
         @Override
         protected Void doInBackground(Void... params) {
 
-            videoDetailArray = new ArrayList<>();
+            videoDetails = null;
             bitmapArrayList = new ArrayList<>();
+            videoDetailsNums = new ArrayList<>();
 
             try {
 
@@ -722,7 +761,7 @@ class ButtonActions {
                     jsonParam.put("params", jsonParam2);
                 }
 
-                jsonParamString = (jsonParam.toString().replaceAll("\"\\[" , "[\""));
+                String jsonParamString = (jsonParam.toString().replaceAll("\"\\[" , "[\""));
                 jsonParamString = (jsonParamString.replaceAll("\\]\"" , "\"]"));
                 jsonParamString = (jsonParamString.replaceAll("\\\\",""));
 
@@ -741,7 +780,7 @@ class ButtonActions {
                 printout.flush();
                 printout.close();
                 BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), Charset.forName("UTF8")));
-                jsonString = new StringBuffer();
+                StringBuffer jsonString = new StringBuffer();
                 String line;
                 while ((line = br.readLine()) != null) {
                     jsonString.append(line);
@@ -750,111 +789,75 @@ class ButtonActions {
                 br.close();
                 conn.disconnect();
 
+                Pattern seriesImagePattern = Pattern.compile("(?<=\"poster\":\"image://)http.*(?=/\",\"season)");
+                Matcher seriesMatch = seriesImagePattern.matcher(jsonString);
+                if (seriesMatch.find()){
+                    try {
+                        url = new URL(URLDecoder.decode(seriesMatch.group(), "UTF-8"));
+                        Bitmap decodedImage = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+                        bitmapArrayList.add(decodedImage);
+                    } catch (IOException exception) {
+                        exception.printStackTrace();
+                    }
+
+                } else {
+                    bitmapArrayList.add(null);
+                }
+
+                Pattern imagePattern = Pattern.compile("(?<=thumbnail\":\"image://)http.*(?=/\")");
+                Matcher imageMatcher = imagePattern.matcher(jsonString);
+                if (imageMatcher.find()){
+                    try {
+                        url = new URL(URLDecoder.decode(imageMatcher.group(),"UTF-8"));
+                        Bitmap decodedImage2 = BitmapFactory.decodeStream(url.openStream());
+                        bitmapArrayList.add(decodedImage2);
+                    } catch (IOException exception) {
+                        exception.printStackTrace();
+                    }
+                } else {
+                    bitmapArrayList.add(null);
+                }
+
+                Pattern seasonPattern = Pattern.compile("(?<=season\":)\\d*");
+                Matcher seasonMatcher = seasonPattern.matcher(jsonString);
+
+                Pattern episodePattern = Pattern.compile("(?<=episode\":)\\d*");
+                Matcher episodeMatcher = episodePattern.matcher(jsonString);
+
+                Pattern showPattern = Pattern.compile("(?<=showtitle\":\").*(?=\",\"stream)");
+                Matcher showMatcher = showPattern.matcher(jsonString);
+
+                Pattern episodeNamePattern = Pattern.compile("(?<=label\":\").*(?=\",\"plot)");
+                Matcher episodeNameMatcher = episodeNamePattern.matcher(jsonString);
+
+                Pattern plotPattern = Pattern.compile("(?<=plot\":\").*(?=\",\"rating)");
+                Matcher plotMatcher = plotPattern.matcher(jsonString);
+
+                if (showMatcher.find()) {
+                    videoDetails = showMatcher.group() + ": ";
+                }
+
+                if (episodeNameMatcher.find()) {
+                    videoDetails = videoDetails + (episodeNameMatcher.group());
+                }
+
+            if (seasonMatcher.find() && episodeMatcher.find()) {
+                videoDetailsNums.add(getInteger(seasonMatcher.group()));
+                videoDetailsNums.add(getInteger(episodeMatcher.group()));
+            }
+
+                if (plotMatcher.find()) {
+                    plot = plotMatcher.group();
+                }
+
             } catch (IOException | JSONException exception) {
                 exception.printStackTrace();
             }
 
-            Pattern seriesImagePattern = Pattern.compile("(?<=\"poster\":\"image://)http.*(?=/\",\"season)");
-            Matcher seriesMatch = seriesImagePattern.matcher(jsonString);
-            if (seriesMatch.find()){
-                try {
-                    URL url = new URL(URLDecoder.decode(seriesMatch.group(), "UTF-8"));
-                    Bitmap decodedImage = BitmapFactory.decodeStream(url.openConnection().getInputStream());
-                    bitmapArrayList.add(decodedImage);
-                } catch (IOException exception) {
-                    exception.printStackTrace();
-                }
-
-
-            } else {
-                bitmapArrayList.add(null);
-            }
-
-            Pattern imagePattern = Pattern.compile("(?<=thumbnail\":\"image://)http.*(?=/\")");
-            Matcher imageMatcher = imagePattern.matcher(jsonString);
-
-
-            if (imageMatcher.find()){
-                try {
-                    URL url = new URL(URLDecoder.decode(imageMatcher.group(),"UTF-8"));
-                    Bitmap decodedImage2 = BitmapFactory.decodeStream(url.openStream());
-                    bitmapArrayList.add(decodedImage2);
-                } catch (IOException exception) {
-                    exception.printStackTrace();
-                }
-            } else {
-                bitmapArrayList.add(null);
-            }
 
             return null;
         }
 
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            System.out.println(jsonParamString);
-            System.out.println(jsonString);
-            System.out.println(videoDetailArray);
-            System.out.println(bitmapArrayList);
-
-
-            Pattern seriesImagePattern = Pattern.compile("(?<=\"poster\":\"image://)http.*(?=/\",\"season)");
-            Matcher seriesMatch = seriesImagePattern.matcher(jsonString);
-            if (seriesMatch.find()) {
-                try {
-                    String temp = URLDecoder.decode(seriesMatch.group(), "UTF-8");
-                    System.out.println(temp);
-                } catch (IOException exception) {
-                    exception.printStackTrace();
-                }
-            }
-
-            Pattern seasonPattern = Pattern.compile("(?<=season\":)\\d*");
-            Matcher seasonMatcher = seasonPattern.matcher(jsonString);
-            if (seasonMatcher.find()){
-              //  System.out.println(seasonMatcher.group());
-            }
-
-            Pattern episodePattern = Pattern.compile("(?<=episode\":)\\d*");
-            Matcher episodeMatcher = episodePattern.matcher(jsonString);
-            if (episodeMatcher.find()) {
-             //   System.out.println(episodeMatcher.group());
-            }
-
-            Pattern showPattern = Pattern.compile("(?<=showtitle\":\").*(?=\",\"stream)");
-            Matcher showMatcher = showPattern.matcher(jsonString);
-
-            if (showMatcher.find()) {
-              //  System.out.println(showMatcher.group());
-            }
-
-            Pattern episodeNamePattern = Pattern.compile("(?<=label\":\").*(?=\",\"plot)");
-            Matcher episodeNameMatcher = episodeNamePattern.matcher(jsonString);
-            if (episodeNameMatcher.find()){
-             //   System.out.println(episodeNameMatcher.group());
-            }
-
-            Pattern plotPattern = Pattern.compile("(?<=plot\":\").*(?=\",\"rating)");
-            Matcher plotMatcher = plotPattern.matcher(jsonString);
-            if (plotMatcher.find()) {
-              //  System.out.println(plotMatcher.group());
-            }
-
-            if (showMatcher.find()){
-                if (episodeMatcher.find()) {
-                    videoDetailArray.add(showMatcher.group() + ": " + episodeNameMatcher.group());
-                } else {
-                    videoDetailArray.add(showMatcher.group());
-                }
-            } else if (episodeMatcher.find()) {
-                videoDetailArray.add(episodeNameMatcher.group());
-            }
-
-            if (seasonMatcher.find() && episodeMatcher.find()) {
-                videoDetailArray.add("Season: " + seasonMatcher.group() + "Episode: " + episodeMatcher.group());
-            }
-
-            super.onPostExecute(aVoid);
-        }
     }
 
 
@@ -911,10 +914,17 @@ class ButtonActions {
         return !(bitmapArrayList.isEmpty());
     }
 
+    static boolean extendedInfoGottenNums() {
+        return !(videoDetailsNums.isEmpty());
+    }
 
-    static ArrayList<String> getExtendedInfoStrings(){
-        return videoDetailArray;
 
+    static String getExtendedInfoString(){
+        return videoDetails;
+    }
+
+    static ArrayList<Integer> getVideoDetailsNums() {
+        return videoDetailsNums;
     }
 
     static ArrayList<Bitmap> getExtendedInfoBitmaps(){
@@ -922,8 +932,20 @@ class ButtonActions {
 
     }
 
+    static String getPlot () {
+        return plot;
+    }
+
     static void getSubs() {
         new AsyncSubtitleMenu().execute();
+    }
+
+    static Long getContentTime() {
+        return contentTime;
+    }
+
+    static  Long getElaspedTime() {
+        return elaspedTime;
     }
 
 }

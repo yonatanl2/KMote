@@ -15,10 +15,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
+import android.widget.SeekBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 
 public class ExtendedControlActivity extends Fragment {
@@ -26,12 +28,43 @@ public class ExtendedControlActivity extends Fragment {
 
     View rootView;
     TextView connecting;
-    RelativeLayout relativeBottom;
     ImageView extendedImage;
-    ArrayList<String> extendedInfo;
     ArrayList<Bitmap> extendedInfoBitmaps;
     SharedPreferences sharedPreferences;
+    TextView contentInfo;
+    TextView contentInfoNums;
+    TextView subtitleText;
+    Spinner subtitleSpinner;
+    SeekBar seekBar;
+    TextView currentProgress;
+    TextView totalTime;
+    int elaspedTime;
     private Handler extendedHandler = new Handler();
+
+
+    public void visibilityChanger(boolean setVisible) {
+        if (setVisible) {
+            extendedImage.setVisibility(View.INVISIBLE);
+            contentInfo.setVisibility(View.INVISIBLE);
+            subtitleSpinner.setVisibility(View.INVISIBLE);
+            subtitleText.setVisibility(View.INVISIBLE);
+            contentInfoNums.setVisibility(View.INVISIBLE);
+            currentProgress.setVisibility(View.INVISIBLE);
+            totalTime.setVisibility(View.INVISIBLE);
+            seekBar.setVisibility(View.INVISIBLE);
+            connecting.setVisibility(View.VISIBLE);
+        } else {
+            contentInfo.setVisibility(View.VISIBLE);
+            contentInfoNums.setVisibility(View.VISIBLE);
+            subtitleSpinner.setVisibility(View.VISIBLE);
+            subtitleText.setVisibility(View.VISIBLE);
+            extendedImage.setVisibility(View.VISIBLE);
+            currentProgress.setVisibility(View.VISIBLE);
+            totalTime.setVisibility(View.VISIBLE);
+            seekBar.setVisibility(View.VISIBLE);
+            connecting.setVisibility(View.INVISIBLE);
+        }
+    }
 
 
 public Runnable extendedInfoChecker = new Runnable() {
@@ -39,29 +72,27 @@ public Runnable extendedInfoChecker = new Runnable() {
     public void run() {
         if (ButtonActions.getStatus()) {
             if (ButtonActions.extendedInfoGotten() && ButtonActions.playerInfoGotten()) {
-                extendedInfo = ButtonActions.getExtendedInfoStrings();
+                extendedHandler.post(progressSetter);
                 extendedInfoBitmaps = ButtonActions.getExtendedInfoBitmaps();
-                if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null) {
-                    extendedImage.setVisibility(View.VISIBLE);
-                    connecting.setVisibility(View.INVISIBLE);
-                    new imageGetter().execute(extendedImage.getWidth(), extendedImage.getHeight(), 1);
-                    extendedHandler.postDelayed(extendedInfoChecker, 5000);
+                if (ButtonActions.extendedInfoGottenNums()) {
+                    ArrayList<Integer> nums = ButtonActions.getVideoDetailsNums();
+                    contentInfoNums.setText("Season: " + nums.get(0) + "\n" + "Episode: " + nums.get(1));
+                }
+                contentInfo.setText(ButtonActions.getExtendedInfoString());
+                visibilityChanger(false);
 
-                } else if (extendedInfoBitmaps.toArray().length > 0 && extendedInfoBitmaps.get(0) != null) {
-                    extendedImage.setVisibility(View.VISIBLE);
-                    connecting.setHeight(0);
-                    connecting.setWidth(0);
-                    new imageGetter().execute(extendedImage.getWidth(), extendedImage.getHeight(), 0);
-                    extendedHandler.postDelayed(extendedInfoChecker, 5000);
+                if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null) {
+                    new imageGetter().execute(extendedImage.getWidth(), extendedImage.getHeight(), 1);
+                    extendedHandler.postDelayed(extendedInfoChecker, 50000);
 
                 } else {
-                    extendedHandler.postDelayed(extendedInfoChecker, 2000);
+                    extendedHandler.postDelayed(extendedInfoChecker, 5000);
                 }
             } else {
                 extendedHandler.postDelayed(extendedInfoChecker, 2000);
             }
         } else {
-            extendedImage.setVisibility(View.INVISIBLE);
+            visibilityChanger(true);
             extendedHandler.postDelayed(connectionChecker, 2000);
         }
     }
@@ -73,9 +104,9 @@ public Runnable extendedInfoChecker = new Runnable() {
         protected Bitmap doInBackground(Integer... params) {
             return Bitmap.createScaledBitmap(extendedInfoBitmaps.get(params[2]), params[0] , params[1] , true);
         }
+
         @Override
         protected void onPostExecute(Bitmap bitmap) {
-            super.onPostExecute(bitmap);
             extendedImage.setImageBitmap(bitmap);
         }
     }
@@ -100,17 +131,54 @@ public Runnable extendedInfoChecker = new Runnable() {
         }
     };
 
+    private Runnable progressSetter = new Runnable() {
+
+        @Override
+        public void run() {
+            int contentTime = ButtonActions.getContentTime().intValue();
+
+            if (elaspedTime == ButtonActions.getElaspedTime().intValue() && !ButtonActions.isPaused()) {
+                elaspedTime = elaspedTime + 1000;
+            } else {
+                elaspedTime = ButtonActions.getElaspedTime().intValue();
+            }
+
+            seekBar.setMax(contentTime);
+            seekBar.setProgress(elaspedTime);
+
+            if (TimeUnit.MILLISECONDS.toHours(contentTime) == 0) {
+                currentProgress.setText((TimeUnit.MILLISECONDS.toMinutes(elaspedTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(elaspedTime))) + ":" + (TimeUnit.MILLISECONDS.toSeconds(elaspedTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(elaspedTime))));
+                totalTime.setText((TimeUnit.MILLISECONDS.toMinutes(contentTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(contentTime))) + ":" + (TimeUnit.MILLISECONDS.toSeconds(contentTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(contentTime))));
+
+            } else {
+                currentProgress.setText(TimeUnit.MILLISECONDS.toHours(elaspedTime) + ":" + (TimeUnit.MILLISECONDS.toMinutes(elaspedTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(elaspedTime))) + ":" + (TimeUnit.MILLISECONDS.toSeconds(elaspedTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(elaspedTime))));
+                totalTime.setText(TimeUnit.MILLISECONDS.toHours(contentTime) + ":" + (TimeUnit.MILLISECONDS.toMinutes(contentTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(contentTime))) + ":" + (TimeUnit.MILLISECONDS.toSeconds(contentTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(contentTime))));
+            }
+
+            extendedHandler.postDelayed(progressSetter, 950);
+        }
+    };
+
+
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         rootView = inflater.inflate(R.layout.extended_controls, container, false);
         connecting = (TextView) rootView.findViewById(R.id.connecting_extended_controls);
-        connecting.setText("No device connected");
-        relativeBottom = (RelativeLayout) rootView.findViewById(R.id.relative_extended_bottom);
         extendedImage = (ImageView) rootView.findViewById(R.id.image_main_extended);
-        relativeBottom.setVisibility(View.INVISIBLE);
-        extendedImage.setVisibility(View.INVISIBLE);
+        contentInfo = (TextView) rootView.findViewById(R.id.content_info_text);
+        contentInfoNums = (TextView) rootView.findViewById(R.id.content_info_nums);
+        subtitleText = (TextView) rootView.findViewById(R.id.subtitle_text);
+        subtitleSpinner = (Spinner) rootView.findViewById(R.id.subtitle_button);
+        seekBar = (SeekBar) rootView.findViewById(R.id.seek_bar);
+        currentProgress = (TextView) rootView.findViewById(R.id.current_progress);
+        totalTime = (TextView) rootView.findViewById(R.id.total_time);
+
+
+        visibilityChanger(true);
+
+        connecting.setText("No device connected");
 
         return rootView;
 }
@@ -118,6 +186,10 @@ public Runnable extendedInfoChecker = new Runnable() {
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        sharedPreferences = getActivity().getSharedPreferences("connection_info", Context.MODE_PRIVATE);
+        extendedHandler.postDelayed(connectionChecker, 1000);
+
+
 
       /*  Button subButton = (Button) rootView.findViewById(R.id.subtitle_button);
         subButton.setOnClickListener(new View.OnClickListener(){
@@ -129,10 +201,24 @@ public Runnable extendedInfoChecker = new Runnable() {
     }
 
     @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        sharedPreferences = getActivity().getSharedPreferences("connection_info", Context.MODE_PRIVATE);
+    public void onResume() {
+        super.onResume();
         extendedHandler.postDelayed(connectionChecker, 1000);
+
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        extendedHandler.removeCallbacks(connectionChecker);
+        extendedHandler.removeCallbacks(extendedInfoChecker);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        extendedHandler.removeCallbacks(connectionChecker);
+        extendedHandler.removeCallbacks(extendedInfoChecker);
     }
 }
 

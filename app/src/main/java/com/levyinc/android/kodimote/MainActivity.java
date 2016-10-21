@@ -42,11 +42,6 @@ public class MainActivity extends AppCompatActivity {
             // This method will trigger on item Click of navigation menu
             @Override
             public boolean onNavigationItemSelected(MenuItem menuItem) {
-                //Checking if the item is in checked state or not, if not make it in checked state
-                if (menuItem.isChecked())
-                    menuItem.setChecked(false);
-                else menuItem.setChecked(true);
-
                 //Closing drawer on item click
                 drawerLayout.closeDrawers();
 
@@ -54,12 +49,13 @@ public class MainActivity extends AppCompatActivity {
                 switch (menuItem.getItemId()) {
                     case R.id.nav_main:
                         fragmentManager.beginTransaction().replace(R.id.content_frame, new SlidingTabActivity()).commit();
-                        /*new Handler().postDelayed(new Runnable() {
+                        new Handler().postDelayed(new Runnable() {
                             @Override
                             public void run() {
                                 fragmentManager.beginTransaction().replace(R.id.content_frame, new SlidingTabActivity()).commit();
                             }
-                        }, 300);*/
+                        }, 300);
+
                         return true;
 
                     case R.id.nav_settings:
@@ -113,81 +109,3 @@ public class MainActivity extends AppCompatActivity {
     }
 
 }
-
-/*public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener{
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        if (android.os.Build.VERSION.SDK_INT > 9) {
-            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-            StrictMode.setThreadPolicy(policy);
-        }
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.addDrawerListener(toggle);
-        toggle.syncState();
-        NavigationView navigationView = (NavigationView) findViewById(R.id.left_drawer);
-        navigationView.setNavigationItemSelectedListener(this);
-
-
-        FragmentManager fragMan = getSupportFragmentManager();
-        fragMan.beginTransaction()
-                .replace(R.id.content_frame, new Main2Activity())
-                .commit();
-
-
-    }
-
-    @Override
-    public void onBackPressed() {
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        if (drawer.isDrawerOpen(GravityCompat.START)) {
-            drawer.closeDrawer(GravityCompat.START);
-        } else {
-            super.onBackPressed();
-        }
-    }
-
-    @SuppressWarnings("StatementWithEmptyBody")
-    @Override
-    public boolean onNavigationItemSelected(MenuItem item) {
-        // Handle navigation view item clicks here.
-
-        int id = item.getItemId();
-        FragmentManager fragMan = getSupportFragmentManager();
-
-        if (id == R.id.nav_main) {
-            fragMan.beginTransaction()
-                    .replace(R.id.content_frame
-                            ,new Main2Activity())
-                    .commit();
-
-        } else if (id == R.id.nav_settings) {
-            fragMan.beginTransaction()
-                    .replace(R.id.content_frame
-                    ,new SettingsActivity())
-                    .commit();
-        }
-
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        drawer.closeDrawer(GravityCompat.START);
-        return true;
-    }
-
-
-
-    @Override
-    protected void onStop() {
-        if (ButtonActions.status){
-            ButtonActions.disconnect();
-        }
-        super.onStop();
-    }
-
-}
-
-*/

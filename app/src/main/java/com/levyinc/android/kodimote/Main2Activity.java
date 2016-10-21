@@ -127,7 +127,7 @@ public class Main2Activity extends Fragment {
             } else if (!(ButtonActions.playerInfoGotten())) {
                     gotInfo = false;
                 }
-            remoteHandler.postDelayed(infoChecker, 2000);
+            remoteHandler.postDelayed(infoChecker, 2500);
         }
     };
 
@@ -151,7 +151,6 @@ public class Main2Activity extends Fragment {
         videoLayout = (LinearLayout) myView.findViewById(R.id.layout1);
         videoLayout.setVisibility(View.INVISIBLE);
         connecting.setVisibility(View.INVISIBLE);
-        System.out.println(select.getWidth());
         return myView;
     }
 

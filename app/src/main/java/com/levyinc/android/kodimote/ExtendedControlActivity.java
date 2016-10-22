@@ -14,13 +14,18 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 public class ExtendedControlActivity extends Fragment {
@@ -38,8 +43,12 @@ public class ExtendedControlActivity extends Fragment {
     SeekBar seekBar;
     TextView currentProgress;
     TextView totalTime;
+    LinearLayout playerActionsLayout;
+    private Boolean imageSet = false;
     int elaspedTime;
+    int contentTime;
     private Handler extendedHandler = new Handler();
+    private Lock lock = new ReentrantLock();
 
 
     public void visibilityChanger(boolean setVisible) {
@@ -52,6 +61,7 @@ public class ExtendedControlActivity extends Fragment {
             currentProgress.setVisibility(View.INVISIBLE);
             totalTime.setVisibility(View.INVISIBLE);
             seekBar.setVisibility(View.INVISIBLE);
+            playerActionsLayout.setVisibility(View.INVISIBLE);
             connecting.setVisibility(View.VISIBLE);
         } else {
             contentInfo.setVisibility(View.VISIBLE);
@@ -62,6 +72,7 @@ public class ExtendedControlActivity extends Fragment {
             currentProgress.setVisibility(View.VISIBLE);
             totalTime.setVisibility(View.VISIBLE);
             seekBar.setVisibility(View.VISIBLE);
+            playerActionsLayout.setVisibility(View.VISIBLE);
             connecting.setVisibility(View.INVISIBLE);
         }
     }
@@ -71,8 +82,9 @@ public Runnable extendedInfoChecker = new Runnable() {
     @Override
     public void run() {
         if (ButtonActions.getStatus()) {
+            System.out.println("This is running");
             if (ButtonActions.extendedInfoGotten() && ButtonActions.playerInfoGotten()) {
-                extendedHandler.post(progressSetter);
+
                 extendedInfoBitmaps = ButtonActions.getExtendedInfoBitmaps();
                 if (ButtonActions.extendedInfoGottenNums()) {
                     ArrayList<Integer> nums = ButtonActions.getVideoDetailsNums();
@@ -80,21 +92,30 @@ public Runnable extendedInfoChecker = new Runnable() {
                 }
                 contentInfo.setText(ButtonActions.getExtendedInfoString());
                 visibilityChanger(false);
-
-                if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null) {
+                if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null && !imageSet) {
                     new imageGetter().execute(extendedImage.getWidth(), extendedImage.getHeight(), 1);
-                    extendedHandler.postDelayed(extendedInfoChecker, 50000);
-
-                } else {
                     extendedHandler.postDelayed(extendedInfoChecker, 5000);
+                } else {
+                    extendedHandler.postDelayed(extendedInfoChecker, 5000);}
+
+                if (elaspedTime == 0) {
+                    extendedHandler.post(progressSetter);}
+
+
+                if (ButtonActions.isPaused() && rootView.findViewById(R.id.play_pause_button_extended).getTag() != "play") {
+                    rootView.findViewById(R.id.play_pause_button_extended).setBackgroundResource(R.drawable.play_button);
+                    rootView.findViewById(R.id.play_pause_button_extended).setTag("play");
+
+                } else if (!(ButtonActions.isPaused()) && rootView.findViewById(R.id.play_pause_button_extended).getTag() != "pause") {
+                    rootView.findViewById(R.id.play_pause_button_extended).setBackgroundResource(R.drawable.pause_button);
+                    rootView.findViewById(R.id.play_pause_button_extended).setTag("pause");
                 }
             } else {
-                extendedHandler.postDelayed(extendedInfoChecker, 2000);
-            }
+                visibilityChanger(true);
+                extendedHandler.postDelayed(extendedInfoChecker, 2000);}
         } else {
             visibilityChanger(true);
-            extendedHandler.postDelayed(connectionChecker, 2000);
-        }
+            extendedHandler.postDelayed(connectionChecker, 2000);}
     }
 };
 
@@ -108,6 +129,7 @@ public Runnable extendedInfoChecker = new Runnable() {
         @Override
         protected void onPostExecute(Bitmap bitmap) {
             extendedImage.setImageBitmap(bitmap);
+            imageSet = true;
         }
     }
 
@@ -126,6 +148,8 @@ public Runnable extendedInfoChecker = new Runnable() {
                     } else {
                         extendedHandler.postDelayed(connectionChecker, 1000);
                     }
+                } else {
+                    extendedHandler.postDelayed(connectionChecker, 1000);
                 }
             }
         }
@@ -135,31 +159,48 @@ public Runnable extendedInfoChecker = new Runnable() {
 
         @Override
         public void run() {
-            int contentTime = ButtonActions.getContentTime().intValue();
-
-            if (elaspedTime == ButtonActions.getElaspedTime().intValue() && !ButtonActions.isPaused()) {
-                elaspedTime = elaspedTime + 1000;
-            } else {
-                elaspedTime = ButtonActions.getElaspedTime().intValue();
+            lock.lock();
+            DecimalFormat formatter = new DecimalFormat("00");
+            if (contentTime != ButtonActions.getContentTime().intValue()) {
+                contentTime = ButtonActions.getContentTime().intValue();
+                seekBar.setMax(contentTime);
+                if (TimeUnit.MILLISECONDS.toHours(contentTime) == 0){
+                    totalTime.setText(formatter.format(TimeUnit.MILLISECONDS.toMinutes(contentTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(contentTime))) + ":" + formatter.format(TimeUnit.MILLISECONDS.toSeconds(contentTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(contentTime))));
+                } else {
+                    totalTime.setText(formatter.format(TimeUnit.MILLISECONDS.toHours(contentTime)) + ":" + formatter.format(TimeUnit.MILLISECONDS.toMinutes(contentTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(contentTime))) + ":" + formatter.format(TimeUnit.MILLISECONDS.toSeconds(contentTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(contentTime))));
+                }
             }
+            if (!(TimeUnit.SECONDS.toSeconds(elaspedTime) >= TimeUnit.SECONDS.toSeconds(contentTime))) {
+                if (TimeUnit.SECONDS.toSeconds(elaspedTime) >= TimeUnit.SECONDS.toSeconds(ButtonActions.getElaspedTime().intValue()) && !ButtonActions.isPaused()) {
+                    elaspedTime = elaspedTime + 1000;
+                } else {
+                    elaspedTime = ButtonActions.getElaspedTime().intValue();
+                }
 
-            seekBar.setMax(contentTime);
-            seekBar.setProgress(elaspedTime);
+                seekBar.setProgress(elaspedTime);
 
-            if (TimeUnit.MILLISECONDS.toHours(contentTime) == 0) {
-                currentProgress.setText((TimeUnit.MILLISECONDS.toMinutes(elaspedTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(elaspedTime))) + ":" + (TimeUnit.MILLISECONDS.toSeconds(elaspedTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(elaspedTime))));
-                totalTime.setText((TimeUnit.MILLISECONDS.toMinutes(contentTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(contentTime))) + ":" + (TimeUnit.MILLISECONDS.toSeconds(contentTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(contentTime))));
+                if (TimeUnit.MILLISECONDS.toHours(contentTime) == 0) {
+                    currentProgress.setText(formatter.format(TimeUnit.MILLISECONDS.toMinutes(elaspedTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(elaspedTime))) + ":" + formatter.format(TimeUnit.MILLISECONDS.toSeconds(elaspedTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(elaspedTime))));
+                } else {
+                    currentProgress.setText(formatter.format(TimeUnit.MILLISECONDS.toHours(elaspedTime)) + ":" + formatter.format(TimeUnit.MILLISECONDS.toMinutes(elaspedTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(elaspedTime))) + ":" + formatter.format(TimeUnit.MILLISECONDS.toSeconds(elaspedTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(elaspedTime))));
+                }
+                lock.unlock();
+                extendedHandler.postDelayed(progressSetter, 1000);
 
-            } else {
-                currentProgress.setText(TimeUnit.MILLISECONDS.toHours(elaspedTime) + ":" + (TimeUnit.MILLISECONDS.toMinutes(elaspedTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(elaspedTime))) + ":" + (TimeUnit.MILLISECONDS.toSeconds(elaspedTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(elaspedTime))));
-                totalTime.setText(TimeUnit.MILLISECONDS.toHours(contentTime) + ":" + (TimeUnit.MILLISECONDS.toMinutes(contentTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(contentTime))) + ":" + (TimeUnit.MILLISECONDS.toSeconds(contentTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(contentTime))));
             }
-
-            extendedHandler.postDelayed(progressSetter, 950);
         }
     };
 
 
+    Thread scalingThread = new Thread(new Runnable() {
+        @Override
+        public void run() {
+            rootView.findViewById(R.id.stop_button_extended).setBackgroundResource(R.drawable.stop_button);
+            rootView.findViewById(R.id.play_pause_button_extended).setBackgroundResource(R.drawable.pause_button);
+            rootView.findViewById(R.id.roll_back_extended).setBackgroundResource(R.drawable.roll_back);
+            rootView.findViewById(R.id.roll_forward_extended).setBackgroundResource(R.drawable.roll_forward);
+        }
+    });
 
     @Nullable
     @Override
@@ -174,11 +215,47 @@ public Runnable extendedInfoChecker = new Runnable() {
         seekBar = (SeekBar) rootView.findViewById(R.id.seek_bar);
         currentProgress = (TextView) rootView.findViewById(R.id.current_progress);
         totalTime = (TextView) rootView.findViewById(R.id.total_time);
+        playerActionsLayout = (LinearLayout) rootView.findViewById(R.id.player_actions_layout);
 
-
+        extendedHandler.post(scalingThread);
         visibilityChanger(true);
-
         connecting.setText("No device connected");
+
+        ImageButton playPause = (ImageButton) rootView.findViewById(R.id.play_pause_button_extended);
+        ImageButton stop = (ImageButton) rootView.findViewById(R.id.stop_button_extended);
+        ImageButton rollBack = (ImageButton) rootView.findViewById(R.id.roll_back_extended);
+        ImageButton fastForward = (ImageButton) rootView.findViewById(R.id.roll_forward_extended);
+
+
+        playPause.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view){
+                ButtonActions.playPause();
+            }
+        });
+
+
+        stop.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view){
+                ButtonActions.stop();
+            }
+        });
+
+        rollBack.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {
+                ButtonActions.rollBack();
+            }
+        });
+
+        fastForward.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view){
+                ButtonActions.fastForward();
+            }
+        });
+
 
         return rootView;
 }
@@ -189,10 +266,29 @@ public Runnable extendedInfoChecker = new Runnable() {
         sharedPreferences = getActivity().getSharedPreferences("connection_info", Context.MODE_PRIVATE);
         extendedHandler.postDelayed(connectionChecker, 1000);
 
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser){
+                    float progressPercentage = (progress * 100.0f) / contentTime;
+                    ButtonActions.playerSeek(progressPercentage);
+                    elaspedTime = 1;
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
 
 
-      /*  Button subButton = (Button) rootView.findViewById(R.id.subtitle_button);
-        subButton.setOnClickListener(new View.OnClickListener(){
+       /* subtitleSpinner.seto(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
                 ButtonActions.getSubs();

@@ -21,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static java.lang.Integer.getInteger;
 import static java.lang.Integer.parseInt;
 
 
@@ -575,12 +574,14 @@ class ButtonActions {
                 printout.write(bytes);
                 printout.flush();
                 printout.close();
+
                 BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                 StringBuffer jsonString = new StringBuffer();
                 String line;
                 while ((line = br.readLine()) != null) {
                     jsonString.append(line);
                 }
+
                 Pattern pattern = Pattern.compile("\"playerid\":(\\d)");
                 Matcher matcher = pattern.matcher(jsonString);
                 if (matcher.find()) {
@@ -593,6 +594,87 @@ class ButtonActions {
                 }
                 br.close();
                 conn.disconnect();
+
+
+                jsonParam = new JSONObject();
+                jsonParam.put("jsonrpc", "2.0");
+                jsonParam.put("method", "Player.getProperties");
+                jsonParam.put("id", 1);
+
+                if (playerInfo.toArray().length > 0) {
+                    Pattern pattern3 = Pattern.compile("\\d$");
+                    Matcher matcher3 = pattern3.matcher(playerInfo.get(0));
+
+                    if (matcher3.find()) {
+                        JSONObject jsonParam2 = new JSONObject();
+                        jsonParam2.put("playerid", parseInt(matcher3.group()));
+
+                        String properties = "[\"speed\", \"time\", \"percentage\", \"subtitles\", \"totaltime\", \"type\"]";
+                        jsonParam2.put("properties", properties);
+                        jsonParam.put("params", jsonParam2);
+                        String jsonParamString = (jsonParam.toString().replaceAll("\"\\[", "["));
+                        jsonParamString = jsonParamString.replaceAll("]\"", "]");
+                        jsonParamString = jsonParamString.replaceAll("\\\\", "");
+
+                        bytes = jsonParamString.getBytes("UTF-8");
+
+                        conn = (HttpURLConnection) url.openConnection();
+                        conn.setDoOutput(true);
+                        conn.setDoInput(true);
+                        conn.setUseCaches(false);
+                        conn.setFixedLengthStreamingMode(bytes.length);
+                        conn.setRequestMethod("POST");
+                        conn.setRequestProperty("Accept", "application/json");
+                        conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+                        conn.connect();
+                        printout = conn.getOutputStream();
+                        printout.write(bytes);
+                        printout.flush();
+                        printout.close();
+                        br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                        jsonString = new StringBuffer();
+                        while ((line = br.readLine()) != null) {
+                            jsonString.append(line);
+                        }
+                        br.close();
+
+                        isPaused = !(jsonString.toString().contains("\"speed\":1"));
+
+                        Pattern totalTimePattern = Pattern.compile("(?<=totaltime\":\\{\").*(?=\\},\")");
+                        Matcher totalTimeMatcher = totalTimePattern.matcher(jsonString);
+
+                        Pattern elaspedTimePattern = Pattern.compile("(?<=time\":\\{\").*(?=\\},\")");
+                        Matcher elaspedTimeMatcher = elaspedTimePattern.matcher(jsonString);
+
+                        if (totalTimeMatcher.find()) {
+                            Pattern timePattern = Pattern.compile("\\d+");
+                            Matcher timeMatcher = timePattern.matcher(totalTimeMatcher.group());
+
+                            ArrayList<Integer> timeArray = new ArrayList<>();
+                            while (timeMatcher.find()){
+                                timeArray.add(parseInt(timeMatcher.group()));
+                            }
+                            if (timeArray.toArray().length > 0) {
+                                contentTime = TimeUnit.MILLISECONDS.convert(timeArray.get(0), TimeUnit.HOURS) +
+                                        TimeUnit.MILLISECONDS.convert(timeArray.get(2), TimeUnit.MINUTES) +
+                                        TimeUnit.MILLISECONDS.convert(timeArray.get(3), TimeUnit.SECONDS);
+                            }
+                            if (elaspedTimeMatcher.find()) {
+                                timeMatcher = timePattern.matcher(elaspedTimeMatcher.group());
+
+                                timeArray = new ArrayList<>();
+                                while (timeMatcher.find()){
+                                    timeArray.add(parseInt(timeMatcher.group()));
+                                }
+                                if (timeArray.toArray().length > 0) {
+                                    elaspedTime = TimeUnit.MILLISECONDS.convert(timeArray.get(0), TimeUnit.HOURS) +
+                                            TimeUnit.MILLISECONDS.convert(timeArray.get(2), TimeUnit.MINUTES) +
+                                            TimeUnit.MILLISECONDS.convert(timeArray.get(3), TimeUnit.SECONDS);
+                                }
+                            }
+                        }
+                    }
+                }
             } catch (IOException | JSONException exception) {
                 exception.printStackTrace();
             }
@@ -602,7 +684,13 @@ class ButtonActions {
         @Override
         protected void onPostExecute(Void aVoid) {
             if (playerInfoGotten()){
-                new AsynchPropertiesGetter().execute();
+                new AsynchLibraryQuerier().execute();
+                buttonActionsHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        new AsynchInfoChecker().execute();
+                    }
+                }, 1500);
             }
             super.onPostExecute(aVoid);
         }
@@ -612,123 +700,12 @@ class ButtonActions {
             new AsynchInfoChecker().execute();
         }
 
-    private static class AsynchPropertiesGetter extends AsyncTask<Void, Void, Void> {
-
-
-        StringBuffer jsonString;
-        JSONObject jsonParam;
-        String jsonParamString;
-
-        @Override
-        protected Void doInBackground(Void... params) {
-            isPaused = !isPaused;
-            try {
-
-                URL url = new URL(request);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
-                jsonParam = new JSONObject();
-                jsonParam.put("jsonrpc", "2.0");
-                jsonParam.put("method", "Player.getProperties");
-                jsonParam.put("id", 1);
-                Pattern pattern2 = Pattern.compile("\\d$");
-                Matcher matcher2 = pattern2.matcher(playerInfo.get(0));
-
-                if (matcher2.find()) {
-                    JSONObject jsonParam2 = new JSONObject();
-                    jsonParam2.put("playerid", parseInt(matcher2.group()));
-                    String properties = "[\"speed\", \"time\", \"percentage\", \"subtitles\", \"totaltime\", \"type\"]";
-                    jsonParam2.put("properties", properties);
-                    jsonParam.put("params", jsonParam2);
-                }
-                jsonParamString = (jsonParam.toString().replaceAll("\"\\[", "["));
-                jsonParamString = jsonParamString.replaceAll("]\"", "]");
-                jsonParamString = jsonParamString.replaceAll("\\\\", "");
-
-                byte[] bytes = jsonParamString.getBytes("UTF-8");
-
-                conn.setDoOutput(true);
-                conn.setDoInput(true);
-                conn.setUseCaches(false);
-                conn.setFixedLengthStreamingMode(bytes.length);
-                conn.setRequestMethod("POST");
-                conn.setRequestProperty("Accept", "application/json");
-                conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-                conn.connect();
-                OutputStream printout = conn.getOutputStream();
-                printout.write(bytes);
-                printout.flush();
-                printout.close();
-                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                jsonString = new StringBuffer();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    jsonString.append(line);
-                }
-                br.close();
-                conn.disconnect();
-
-                isPaused = !(jsonString.toString().contains("\"speed\":1"));
-
-                Pattern totalTimePattern = Pattern.compile("(?<=totaltime\":\\{\").*(?=\\},\")");
-                Matcher totalTimeMatcher = totalTimePattern.matcher(jsonString);
-
-                Pattern elaspedTimePattern = Pattern.compile("(?<=time\":\\{\").*(?=\\},\")");
-                Matcher elaspedTimeMatcher = elaspedTimePattern.matcher(jsonString);
-
-                if (totalTimeMatcher.find()) {
-                    Pattern timePattern = Pattern.compile("\\d+");
-                    Matcher timeMatcher = timePattern.matcher(totalTimeMatcher.group());
-
-                    ArrayList<Integer> timeArray = new ArrayList<>();
-                    while (timeMatcher.find()){
-                        timeArray.add(parseInt(timeMatcher.group()));
-                    }
-                    if (timeArray.toArray().length > 0) {
-                        contentTime = TimeUnit.MILLISECONDS.convert(timeArray.get(0), TimeUnit.HOURS) +
-                                TimeUnit.MILLISECONDS.convert(timeArray.get(2), TimeUnit.MINUTES) +
-                                TimeUnit.MILLISECONDS.convert(timeArray.get(3), TimeUnit.SECONDS);
-                    }
-                    if (elaspedTimeMatcher.find()) {
-                        timeMatcher = timePattern.matcher(elaspedTimeMatcher.group());
-
-                        timeArray = new ArrayList<>();
-                        while (timeMatcher.find()){
-                            timeArray.add(parseInt(timeMatcher.group()));
-                        }
-                        if (timeArray.toArray().length > 0) {
-                            elaspedTime = TimeUnit.MILLISECONDS.convert(timeArray.get(0), TimeUnit.HOURS) +
-                                    TimeUnit.MILLISECONDS.convert(timeArray.get(2), TimeUnit.MINUTES) +
-                                    TimeUnit.MILLISECONDS.convert(timeArray.get(3), TimeUnit.SECONDS);
-                        }
-                    }
-                }
-            } catch (IOException | JSONException exception) {
-                exception.printStackTrace();
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            System.out.println(jsonString);
-            new AsynchLibraryQuerier().execute();
-            buttonActionsHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    new AsynchPropertiesGetter().execute();
-                }
-            }, 1500);
-            super.onPostExecute(aVoid);
-        }
-    }
-
         static boolean isPaused() {
             return isPaused;
     }
 
     static boolean playerInfoGotten() {
-        return !(playerInfo.isEmpty());
+        return (!(playerInfo.isEmpty()) && playerInfo.toArray().length > 0);
     }
 
 
@@ -842,8 +819,12 @@ class ButtonActions {
                 }
 
             if (seasonMatcher.find() && episodeMatcher.find()) {
-                videoDetailsNums.add(getInteger(seasonMatcher.group()));
-                videoDetailsNums.add(getInteger(episodeMatcher.group()));
+                try {
+                    videoDetailsNums.add(parseInt(seasonMatcher.group()));
+                    videoDetailsNums.add(parseInt(episodeMatcher.group()));
+                } catch (NumberFormatException exception) {
+                    exception.printStackTrace();
+                }
             }
 
                 if (plotMatcher.find()) {
@@ -946,6 +927,59 @@ class ButtonActions {
 
     static  Long getElaspedTime() {
         return elaspedTime;
+    }
+
+    private static class AsyncSeek extends AsyncTask<Float, Void, Void> {
+        @Override
+        protected Void doInBackground(Float... params) {
+            if (playerInfo.toArray().length > 0) {
+                try {
+                    URL url = new URL(request);
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    Pattern pattern3 = Pattern.compile("\\d$");
+                    Matcher matcher3 = pattern3.matcher(playerInfo.get(0));
+
+                    if (matcher3.find()) {
+                        JSONObject jsonParam = new JSONObject();
+                        jsonParam.put("jsonrpc", "2.0");
+                        jsonParam.put("method", "Player.Seek");
+                        jsonParam.put("id", 1);
+
+                        JSONObject jsonParam2 = new JSONObject();
+                        jsonParam2.put("playerid", parseInt(matcher3.group()));
+                        jsonParam2.put("value", params[0]);
+
+                        jsonParam.put("params", jsonParam2);
+
+                        byte[] bytes = jsonParam.toString().getBytes("UTF-8");
+
+                        conn.setFixedLengthStreamingMode(bytes.length);
+
+                        conn.setDoOutput(true);
+                        conn.setDoInput(true);
+                        conn.setUseCaches(false);
+                        conn.setRequestMethod("POST");
+                        conn.setRequestProperty("Accept", "application/json");
+                        conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+                        conn.connect();
+
+                        OutputStream printout = conn.getOutputStream();
+                        printout.write(bytes);
+                        printout.flush();
+                        printout.close();
+                        conn.disconnect();
+                    }
+                } catch (IOException | JSONException exception) {
+                    exception.printStackTrace();
+                }
+            }
+            return null;
+        }
+    }
+
+
+    static void playerSeek (float percentage) {
+        new AsyncSeek().execute(percentage);
     }
 
 }

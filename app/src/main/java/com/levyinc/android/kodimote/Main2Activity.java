@@ -95,15 +95,14 @@ public class Main2Activity extends Fragment {
     private Thread playCheck = new Thread(new Runnable() {
             @Override
             public void run () {
-                if (ButtonActions.getStatus()) {
-                    if (gotInfo) {
+                    if (ButtonActions.playerInfoGotten()) {
                         videoLayout.setVisibility(View.VISIBLE);
                         connecting.setVisibility(View.INVISIBLE);
-                        if (ButtonActions.isPaused() && playPause.getTag() == "pause") {
+                        if (ButtonActions.isPaused() && playPause.getTag() != "play") {
                             playPause.setBackgroundResource(R.drawable.play_button);
                             playPause.setTag("play");
                             paused = true;
-                        } else if (!(ButtonActions.isPaused()) && playPause.getTag() == "play") {
+                        } else if (!(ButtonActions.isPaused()) && playPause.getTag() != "pause") {
                             playPause.setBackgroundResource(R.drawable.pause_button);
                             playPause.setTag("pause");
                             paused = false;
@@ -112,7 +111,6 @@ public class Main2Activity extends Fragment {
                         videoLayout.setVisibility(View.INVISIBLE);
                         connecting.setVisibility(View.VISIBLE);
                     }
-                }
                 remoteHandler.postDelayed(playCheck, 4000);
             }
         });
@@ -120,14 +118,19 @@ public class Main2Activity extends Fragment {
     private Runnable infoChecker = new Runnable() {
         @Override
         public void run() {
-            ButtonActions.getInfo();
-                if (ButtonActions.playerInfoGotten()) {
-                    gotInfo = true;
-                    remoteHandler.postDelayed(playCheck, 500);
-            } else if (!(ButtonActions.playerInfoGotten())) {
-                    gotInfo = false;
-                }
+            System.out.println("getting info");
+            if (ButtonActions.playerInfoGotten()) {
+                remoteHandler.postDelayed(playCheck, 500);
+            }
             remoteHandler.postDelayed(infoChecker, 2500);
+        }
+    };
+
+    private Runnable intialHandlerSetter = new Runnable() {
+        @Override
+        public void run() {
+            ButtonActions.getInfo();
+            remoteHandler.postDelayed(infoChecker, 300);
         }
     };
 
@@ -160,7 +163,7 @@ public class Main2Activity extends Fragment {
 
         remoteHandler.post(scalingThread);
         remoteHandler.postDelayed(connectionThread, 100);
-        remoteHandler.postDelayed(infoChecker, 300);
+        remoteHandler.postDelayed(intialHandlerSetter, 300);
         remoteHandler.postDelayed(playCheck, 500);
 
         sharedPreferences = getActivity().getSharedPreferences("connection_info", Context.MODE_PRIVATE);
@@ -333,7 +336,7 @@ public class Main2Activity extends Fragment {
         super.onResume();
         if (sharedPreferences.getString("successful_connection", "").equals("y")) {
             remoteHandler.postDelayed(connectionThread, 50);
-            remoteHandler.postDelayed(infoChecker, 70);
+            remoteHandler.postDelayed(intialHandlerSetter, 70);
             remoteHandler.postDelayed(playCheck, 100);
         }
     }

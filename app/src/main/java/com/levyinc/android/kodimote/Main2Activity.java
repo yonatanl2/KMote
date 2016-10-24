@@ -95,7 +95,7 @@ public class Main2Activity extends Fragment {
     private Thread playCheck = new Thread(new Runnable() {
             @Override
             public void run () {
-                    if (ButtonActions.playerInfoGotten()) {
+                if (ButtonActions.playerInfoGotten()) {
                         videoLayout.setVisibility(View.VISIBLE);
                         connecting.setVisibility(View.INVISIBLE);
                         if (ButtonActions.isPaused() && playPause.getTag() != "play") {
@@ -118,7 +118,6 @@ public class Main2Activity extends Fragment {
     private Runnable infoChecker = new Runnable() {
         @Override
         public void run() {
-            System.out.println("getting info");
             if (ButtonActions.playerInfoGotten()) {
                 remoteHandler.postDelayed(playCheck, 500);
             }
@@ -141,7 +140,6 @@ public class Main2Activity extends Fragment {
         myView = inflater.inflate(R.layout.remote_activity, container, false);
         connecting = (TextView) myView.findViewById(R.id.connect_message);
         playPause = (ImageButton) myView.findViewById(R.id.play_pause_button);
-        playPause.setTag("pause");
 
         select = (ImageButton) myView.findViewById(R.id.select);
         buttonDown = (ImageButton) myView.findViewById(R.id.arrow_button_4);
@@ -154,17 +152,19 @@ public class Main2Activity extends Fragment {
         videoLayout = (LinearLayout) myView.findViewById(R.id.layout1);
         videoLayout.setVisibility(View.INVISIBLE);
         connecting.setVisibility(View.INVISIBLE);
+
+        if (ButtonActions.isPaused()){
+            playPause.setTag("play");
+        } else {
+            playPause.setTag("pause");
+        }
+
         return myView;
     }
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-        remoteHandler.post(scalingThread);
-        remoteHandler.postDelayed(connectionThread, 100);
-        remoteHandler.postDelayed(intialHandlerSetter, 300);
-        remoteHandler.postDelayed(playCheck, 500);
 
         sharedPreferences = getActivity().getSharedPreferences("connection_info", Context.MODE_PRIVATE);
 
@@ -331,13 +331,16 @@ public class Main2Activity extends Fragment {
     }
 
 
+
     @Override
     public void onResume() {
         super.onResume();
         if (sharedPreferences.getString("successful_connection", "").equals("y")) {
-            remoteHandler.postDelayed(connectionThread, 50);
-            remoteHandler.postDelayed(intialHandlerSetter, 70);
-            remoteHandler.postDelayed(playCheck, 100);
+            remoteHandler.post(scalingThread);
+            remoteHandler.postDelayed(connectionThread, 100);
+            remoteHandler.postDelayed(intialHandlerSetter, 300);
+            remoteHandler.postDelayed(playCheck, 500);
+
         }
     }
     
@@ -346,6 +349,7 @@ public class Main2Activity extends Fragment {
     public void onPause() {
         super.onPause();
         ButtonActions.disconnect();
+        ButtonActions.buttonActionsHandler.removeCallbacksAndMessages(null);
         remoteHandler.removeCallbacksAndMessages(null);
     }
 
@@ -353,6 +357,7 @@ public class Main2Activity extends Fragment {
     public void onDetach() {
         super.onDetach();
         ButtonActions.disconnect();
+        ButtonActions.buttonActionsHandler.removeCallbacksAndMessages(null);
         remoteHandler.removeCallbacksAndMessages(null);
     }
 
@@ -360,6 +365,7 @@ public class Main2Activity extends Fragment {
     public void onStop() {
         super.onStop();
         ButtonActions.disconnect();
+        ButtonActions.buttonActionsHandler.removeCallbacksAndMessages(null);
         remoteHandler.removeCallbacksAndMessages(null);
     }
 }

@@ -74,10 +74,10 @@ public class SlidingTabActivity extends android.support.v4.app.Fragment {
         viewPager.setCurrentItem(1);
 }
 
+
     @Override
     public void onStop() {
         super.onStop();
-        ButtonActions.buttonActionsHandler.removeCallbacksAndMessages(null);
     }
 }
 

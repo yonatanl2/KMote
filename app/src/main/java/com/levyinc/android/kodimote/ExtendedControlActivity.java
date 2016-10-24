@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.NestedScrollView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -44,6 +45,15 @@ public class ExtendedControlActivity extends Fragment {
     TextView currentProgress;
     TextView totalTime;
     LinearLayout playerActionsLayout;
+    View separator;
+    TextView plotText;
+    NetworkInfo activeNetwork;
+    NestedScrollView nestedScrollView;
+
+    int paddingTop;
+    int firstScroll;
+    int imageViewPadding;
+
     private Boolean imageSet = false;
     int elaspedTime;
     int contentTime;
@@ -62,6 +72,8 @@ public class ExtendedControlActivity extends Fragment {
             totalTime.setVisibility(View.INVISIBLE);
             seekBar.setVisibility(View.INVISIBLE);
             playerActionsLayout.setVisibility(View.INVISIBLE);
+            separator.setVisibility(View.INVISIBLE);
+            plotText.setVisibility(View.INVISIBLE);
             connecting.setVisibility(View.VISIBLE);
         } else {
             contentInfo.setVisibility(View.VISIBLE);
@@ -73,6 +85,8 @@ public class ExtendedControlActivity extends Fragment {
             totalTime.setVisibility(View.VISIBLE);
             seekBar.setVisibility(View.VISIBLE);
             playerActionsLayout.setVisibility(View.VISIBLE);
+            separator.setVisibility(View.VISIBLE);
+            plotText.setVisibility(View.VISIBLE);
             connecting.setVisibility(View.INVISIBLE);
         }
     }
@@ -82,15 +96,22 @@ public Runnable extendedInfoChecker = new Runnable() {
     @Override
     public void run() {
         if (ButtonActions.getStatus()) {
-            System.out.println("This is running");
-            if (ButtonActions.extendedInfoGotten() && ButtonActions.playerInfoGotten()) {
-
+            if (ButtonActions.playerInfoGotten()) {
                 extendedInfoBitmaps = ButtonActions.getExtendedInfoBitmaps();
                 if (ButtonActions.extendedInfoGottenNums()) {
                     ArrayList<Integer> nums = ButtonActions.getVideoDetailsNums();
                     contentInfoNums.setText("Season: " + nums.get(0) + "\n" + "Episode: " + nums.get(1));
                 }
-                contentInfo.setText(ButtonActions.getExtendedInfoString());
+
+
+                ArrayList<String> tempArrayList = ButtonActions.getExtendedInfoString();
+                if (tempArrayList.toArray().length > 1) {
+                    contentInfo.setText(tempArrayList.get(0)+ ": " + tempArrayList.get(1));
+                } else {
+                    contentInfo.setText(tempArrayList.get(1));
+                }
+
+
                 visibilityChanger(false);
                 if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null && !imageSet) {
                     new imageGetter().execute(extendedImage.getWidth(), extendedImage.getHeight(), 1);
@@ -110,12 +131,16 @@ public Runnable extendedInfoChecker = new Runnable() {
                     rootView.findViewById(R.id.play_pause_button_extended).setBackgroundResource(R.drawable.pause_button);
                     rootView.findViewById(R.id.play_pause_button_extended).setTag("pause");
                 }
+
+                plotText.setText(ButtonActions.getPlot());
+
+
             } else {
                 visibilityChanger(true);
-                extendedHandler.postDelayed(extendedInfoChecker, 2000);}
+                extendedHandler.postDelayed(extendedInfoChecker, 2500);}
         } else {
             visibilityChanger(true);
-            extendedHandler.postDelayed(connectionChecker, 2000);}
+            extendedHandler.postDelayed(connectionChecker, 3500);}
     }
 };
 
@@ -136,8 +161,7 @@ public Runnable extendedInfoChecker = new Runnable() {
     private Runnable connectionChecker = new Runnable() {
         public void run() {
             if (sharedPreferences.getString("successful_connection", "").equals("y") || ButtonActions.getStatus()) {
-                final ConnectivityManager cm = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
-                NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+
                 if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
                     connecting.setVisibility(View.VISIBLE);
                     connecting.setText("Connecting...");
@@ -161,13 +185,15 @@ public Runnable extendedInfoChecker = new Runnable() {
         public void run() {
             lock.lock();
             DecimalFormat formatter = new DecimalFormat("00");
-            if (contentTime != ButtonActions.getContentTime().intValue()) {
-                contentTime = ButtonActions.getContentTime().intValue();
-                seekBar.setMax(contentTime);
-                if (TimeUnit.MILLISECONDS.toHours(contentTime) == 0){
-                    totalTime.setText(formatter.format(TimeUnit.MILLISECONDS.toMinutes(contentTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(contentTime))) + ":" + formatter.format(TimeUnit.MILLISECONDS.toSeconds(contentTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(contentTime))));
-                } else {
-                    totalTime.setText(formatter.format(TimeUnit.MILLISECONDS.toHours(contentTime)) + ":" + formatter.format(TimeUnit.MILLISECONDS.toMinutes(contentTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(contentTime))) + ":" + formatter.format(TimeUnit.MILLISECONDS.toSeconds(contentTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(contentTime))));
+            if (ButtonActions.getContentTime() > 0) {
+                if (contentTime != ButtonActions.getContentTime().intValue()) {
+                    contentTime = ButtonActions.getContentTime().intValue();
+                    seekBar.setMax(contentTime);
+                    if (TimeUnit.MILLISECONDS.toHours(contentTime) == 0) {
+                        totalTime.setText(formatter.format(TimeUnit.MILLISECONDS.toMinutes(contentTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(contentTime))) + ":" + formatter.format(TimeUnit.MILLISECONDS.toSeconds(contentTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(contentTime))));
+                    } else {
+                        totalTime.setText(formatter.format(TimeUnit.MILLISECONDS.toHours(contentTime)) + ":" + formatter.format(TimeUnit.MILLISECONDS.toMinutes(contentTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(contentTime))) + ":" + formatter.format(TimeUnit.MILLISECONDS.toSeconds(contentTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(contentTime))));
+                    }
                 }
             }
             if (!(TimeUnit.SECONDS.toSeconds(elaspedTime) >= TimeUnit.SECONDS.toSeconds(contentTime))) {
@@ -216,6 +242,12 @@ public Runnable extendedInfoChecker = new Runnable() {
         currentProgress = (TextView) rootView.findViewById(R.id.current_progress);
         totalTime = (TextView) rootView.findViewById(R.id.total_time);
         playerActionsLayout = (LinearLayout) rootView.findViewById(R.id.player_actions_layout);
+        separator = rootView.findViewById(R.id.extended_separator);
+        plotText = (TextView) rootView.findViewById(R.id.plot_text);
+        nestedScrollView = (NestedScrollView) rootView.findViewById(R.id.scrollView_extended);
+
+
+        sharedPreferences = getActivity().getSharedPreferences("connection_info", Context.MODE_PRIVATE);
 
         extendedHandler.post(scalingThread);
         visibilityChanger(true);
@@ -260,11 +292,17 @@ public Runnable extendedInfoChecker = new Runnable() {
         return rootView;
 }
 
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        ConnectivityManager cm = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+        activeNetwork = cm.getActiveNetworkInfo();
+    }
+
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        sharedPreferences = getActivity().getSharedPreferences("connection_info", Context.MODE_PRIVATE);
-        extendedHandler.postDelayed(connectionChecker, 1000);
 
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -287,6 +325,27 @@ public Runnable extendedInfoChecker = new Runnable() {
             }
         });
 
+        paddingTop = nestedScrollView.getPaddingTop();
+        imageViewPadding = extendedImage.getPaddingTop();
+        nestedScrollView.setOnScrollChangeListener(new NestedScrollView.OnScrollChangeListener() {
+            @Override
+            public void onScrollChange(NestedScrollView v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
+                System.out.println("scroll x: " + scrollX);
+                System.out.println("scroll y: " + scrollY);
+                System.out.println("old - scroll x: " + oldScrollX);
+                System.out.println("old - scroll y: " + oldScrollY);
+
+
+                float scrollYdouble = (float) scrollY;
+                extendedImage.setAlpha(1.0f - (scrollYdouble/350));
+
+
+            }
+        });
+
+
+
+
 
        /* subtitleSpinner.seto(new View.OnClickListener(){
             @Override
@@ -306,15 +365,13 @@ public Runnable extendedInfoChecker = new Runnable() {
     @Override
     public void onPause() {
         super.onPause();
-        extendedHandler.removeCallbacks(connectionChecker);
-        extendedHandler.removeCallbacks(extendedInfoChecker);
+        extendedHandler.removeCallbacks(null);
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        extendedHandler.removeCallbacks(connectionChecker);
-        extendedHandler.removeCallbacks(extendedInfoChecker);
+        extendedHandler.removeCallbacks(null);
     }
 }
 

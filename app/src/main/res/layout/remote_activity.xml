@@ -34,6 +34,7 @@
 
         <ImageButton
             style="?android:attr/buttonBarButtonStyle"
+            android:elevation="2dp"
             android:layout_marginEnd="18dp"
             android:layout_marginStart="18dp"
             android:layout_width="0dp"
@@ -43,6 +44,7 @@
             />
         <ImageButton
             style="?android:attr/buttonBarButtonStyle"
+            android:elevation="2dp"
             android:layout_marginEnd="18dp"
             android:layout_marginStart="18dp"
             android:layout_width="0dp"
@@ -52,6 +54,7 @@
             />
         <ImageButton
             style="?android:attr/buttonBarButtonStyle"
+            android:elevation="2dp"
             android:layout_marginEnd="18dp"
             android:layout_marginStart="18dp"
             android:layout_width="0dp"
@@ -61,6 +64,7 @@
             />
         <ImageButton
             style="?android:attr/buttonBarButtonStyle"
+            android:elevation="2dp"
             android:layout_width="0dp"
             android:layout_height="50dp"
             android:layout_marginEnd="18dp"
@@ -81,6 +85,7 @@
 
                 <ImageButton
                     style="?android:attr/buttonBarButtonStyle"
+                    android:elevation="2dp"
                     android:layout_height="150dp"
                     android:layout_width="120dp"
                     android:id="@+id/arrow_button_1"
@@ -91,6 +96,7 @@
                 </ImageButton>
                 <ImageButton
                     style="?android:attr/buttonBarButtonStyle"
+                    android:elevation="2dp"
                     android:layout_height="120dp"
                     android:layout_width="150dp"
                     android:layout_marginTop="10dp"
@@ -102,6 +108,7 @@
                 </ImageButton>
                 <ImageButton
                     style="?android:attr/buttonBarButtonStyle"
+                    android:elevation="2dp"
                     android:layout_height="150dp"
                     android:layout_width="120dp"
                     android:id="@+id/arrow_button_3"
@@ -111,7 +118,7 @@
                 </ImageButton>
                 <ImageButton
                     style="?android:attr/buttonBarButtonStyle"
-
+                    android:elevation="2dp"
                     android:layout_height="120dp"
                     android:layout_width="150dp"
                     android:layout_marginBottom="10dp"
@@ -122,6 +129,7 @@
                 </ImageButton>
                 <ImageButton
                     style="?android:attr/buttonBarButtonStyle"
+                    android:elevation="2dp"
                     android:layout_width="100dp"
                     android:layout_height="100dp"
                     android:layout_centerHorizontal="true"
@@ -132,6 +140,7 @@
             </RelativeLayout>
             <Button
                 style="?android:attr/buttonBarButtonStyle"
+                android:elevation="2dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/back_button"

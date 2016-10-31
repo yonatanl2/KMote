@@ -2,6 +2,7 @@ package com.levyinc.android.kodimote;
 
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
@@ -12,16 +13,19 @@ import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.NestedScrollView;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.PopupMenu;
 import android.view.LayoutInflater;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
-import android.widget.Spinner;
 import android.widget.TextView;
-
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +44,7 @@ public class ExtendedControlActivity extends Fragment {
     TextView contentInfo;
     TextView contentInfoNums;
     TextView subtitleText;
-    Spinner subtitleSpinner;
+    ImageButton extendedActions;
     SeekBar seekBar;
     TextView currentProgress;
     TextView totalTime;
@@ -50,11 +54,8 @@ public class ExtendedControlActivity extends Fragment {
     NetworkInfo activeNetwork;
     NestedScrollView nestedScrollView;
 
-    int paddingTop;
-    int firstScroll;
-    int imageViewPadding;
 
-    private Boolean imageSet = false;
+    private ArrayList<String> currentContent = null;
     int elaspedTime;
     int contentTime;
     private Handler extendedHandler = new Handler();
@@ -65,7 +66,7 @@ public class ExtendedControlActivity extends Fragment {
         if (setVisible) {
             extendedImage.setVisibility(View.INVISIBLE);
             contentInfo.setVisibility(View.INVISIBLE);
-            subtitleSpinner.setVisibility(View.INVISIBLE);
+            extendedActions.setVisibility(View.INVISIBLE);
             subtitleText.setVisibility(View.INVISIBLE);
             contentInfoNums.setVisibility(View.INVISIBLE);
             currentProgress.setVisibility(View.INVISIBLE);
@@ -78,7 +79,7 @@ public class ExtendedControlActivity extends Fragment {
         } else {
             contentInfo.setVisibility(View.VISIBLE);
             contentInfoNums.setVisibility(View.VISIBLE);
-            subtitleSpinner.setVisibility(View.VISIBLE);
+            extendedActions.setVisibility(View.VISIBLE);
             subtitleText.setVisibility(View.VISIBLE);
             extendedImage.setVisibility(View.VISIBLE);
             currentProgress.setVisibility(View.VISIBLE);
@@ -111,13 +112,12 @@ public Runnable extendedInfoChecker = new Runnable() {
                     contentInfo.setText(tempArrayList.get(1));
                 }
 
-
                 visibilityChanger(false);
-                if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null && !imageSet) {
+                if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null && currentContent != ButtonActions.getExtendedInfoString()) {
                     new imageGetter().execute(extendedImage.getWidth(), extendedImage.getHeight(), 1);
-                    extendedHandler.postDelayed(extendedInfoChecker, 5000);
+                    extendedHandler.postDelayed(extendedInfoChecker, 2000);
                 } else {
-                    extendedHandler.postDelayed(extendedInfoChecker, 5000);}
+                    extendedHandler.postDelayed(extendedInfoChecker, 2000);}
 
                 if (elaspedTime == 0) {
                     extendedHandler.post(progressSetter);}
@@ -154,14 +154,13 @@ public Runnable extendedInfoChecker = new Runnable() {
         @Override
         protected void onPostExecute(Bitmap bitmap) {
             extendedImage.setImageBitmap(bitmap);
-            imageSet = true;
+            currentContent = ButtonActions.getExtendedInfoString();
         }
     }
 
     private Runnable connectionChecker = new Runnable() {
         public void run() {
             if (sharedPreferences.getString("successful_connection", "").equals("y") || ButtonActions.getStatus()) {
-
                 if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
                     connecting.setVisibility(View.VISIBLE);
                     connecting.setText("Connecting...");
@@ -170,9 +169,11 @@ public Runnable extendedInfoChecker = new Runnable() {
                         extendedHandler.postDelayed(extendedInfoChecker, 2000);
 
                     } else {
+                        visibilityChanger(true);
                         extendedHandler.postDelayed(connectionChecker, 1000);
                     }
                 } else {
+                    visibilityChanger(true);
                     extendedHandler.postDelayed(connectionChecker, 1000);
                 }
             }
@@ -185,14 +186,16 @@ public Runnable extendedInfoChecker = new Runnable() {
         public void run() {
             lock.lock();
             DecimalFormat formatter = new DecimalFormat("00");
-            if (ButtonActions.getContentTime() > 0) {
-                if (contentTime != ButtonActions.getContentTime().intValue()) {
-                    contentTime = ButtonActions.getContentTime().intValue();
-                    seekBar.setMax(contentTime);
-                    if (TimeUnit.MILLISECONDS.toHours(contentTime) == 0) {
-                        totalTime.setText(formatter.format(TimeUnit.MILLISECONDS.toMinutes(contentTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(contentTime))) + ":" + formatter.format(TimeUnit.MILLISECONDS.toSeconds(contentTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(contentTime))));
-                    } else {
-                        totalTime.setText(formatter.format(TimeUnit.MILLISECONDS.toHours(contentTime)) + ":" + formatter.format(TimeUnit.MILLISECONDS.toMinutes(contentTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(contentTime))) + ":" + formatter.format(TimeUnit.MILLISECONDS.toSeconds(contentTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(contentTime))));
+            if (ButtonActions.getContentTime() != null) {
+                if (ButtonActions.getContentTime() > 0) {
+                    if (contentTime != ButtonActions.getContentTime().intValue()) {
+                        contentTime = ButtonActions.getContentTime().intValue();
+                        seekBar.setMax(contentTime);
+                        if (TimeUnit.MILLISECONDS.toHours(contentTime) == 0) {
+                            totalTime.setText(formatter.format(TimeUnit.MILLISECONDS.toMinutes(contentTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(contentTime))) + ":" + formatter.format(TimeUnit.MILLISECONDS.toSeconds(contentTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(contentTime))));
+                        } else {
+                            totalTime.setText(formatter.format(TimeUnit.MILLISECONDS.toHours(contentTime)) + ":" + formatter.format(TimeUnit.MILLISECONDS.toMinutes(contentTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(contentTime))) + ":" + formatter.format(TimeUnit.MILLISECONDS.toSeconds(contentTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(contentTime))));
+                        }
                     }
                 }
             }
@@ -237,7 +240,7 @@ public Runnable extendedInfoChecker = new Runnable() {
         contentInfo = (TextView) rootView.findViewById(R.id.content_info_text);
         contentInfoNums = (TextView) rootView.findViewById(R.id.content_info_nums);
         subtitleText = (TextView) rootView.findViewById(R.id.subtitle_text);
-        subtitleSpinner = (Spinner) rootView.findViewById(R.id.subtitle_button);
+        extendedActions = (ImageButton) rootView.findViewById(R.id.subtitle_button);
         seekBar = (SeekBar) rootView.findViewById(R.id.seek_bar);
         currentProgress = (TextView) rootView.findViewById(R.id.current_progress);
         totalTime = (TextView) rootView.findViewById(R.id.total_time);
@@ -325,8 +328,7 @@ public Runnable extendedInfoChecker = new Runnable() {
             }
         });
 
-        paddingTop = nestedScrollView.getPaddingTop();
-        imageViewPadding = extendedImage.getPaddingTop();
+
         nestedScrollView.setOnScrollChangeListener(new NestedScrollView.OnScrollChangeListener() {
             @Override
             public void onScrollChange(NestedScrollView v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
@@ -343,16 +345,89 @@ public Runnable extendedInfoChecker = new Runnable() {
             }
         });
 
-
-
-
-
-       /* subtitleSpinner.seto(new View.OnClickListener(){
+        extendedActions.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ButtonActions.getSubs();
+                PopupMenu popupMenu = new PopupMenu(getActivity(), v);
+                MenuInflater menuInflater = popupMenu.getMenuInflater();
+                menuInflater.inflate(R.menu.extended_menu, popupMenu.getMenu());
+
+                popupMenu.show();
+                popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem item) {
+                        switch (item.toString()){
+                            case ("Subtitles"):
+                                final ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), R.layout.list_view, ButtonActions.getSubtitleInfo());
+                                AlertDialog.Builder builder = new AlertDialog.Builder(getActivity(), R.style.myAlertDialog);
+                                builder.setTitle("Subtitles");
+                                builder.setAdapter(adapter, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        if (adapter.getItem(0).equals("Remove Subtitles")) {
+                                            switch (which){
+                                                case 0:
+                                                    ButtonActions.subtitleAction(which - 3);
+                                                    break;
+                                                case 1:
+                                                    ButtonActions.sync("subtitledelay");
+                                                    break;
+                                                case 2:
+                                                    ButtonActions.getSubs();
+                                                    break;
+                                                default:
+                                                    ButtonActions.subtitleAction(which - 3);
+                                                    break;
+                                           }
+                                        } else  {
+                                            switch (which){
+                                                case 0:
+                                                    ButtonActions.getSubs();
+                                                    break;
+                                                default:
+                                                    ButtonActions.subtitleAction(which - 1);
+                                                    break;
+                                            }
+                                        }
+                                    }
+                                });
+                                builder.show();
+                                break;
+                            case ("Audio Streams"):
+                                final ArrayAdapter<String> adapter2 = new ArrayAdapter<>(getActivity(), R.layout.list_view, ButtonActions.getAudioStreamInfo());
+                                AlertDialog.Builder builder2 = new AlertDialog.Builder(getActivity(), R.style.myAlertDialog);
+                                if (adapter2.getCount() > 0) {
+                                    builder2.setTitle("Audio Streams");
+                                    builder2.setAdapter(adapter2, new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            switch (which) {
+                                                case 0:
+                                                    ButtonActions.sync("audiodelay");
+                                                    break;
+                                                case 1:
+                                                    ButtonActions.audiStreamAction(which - 1);
+                                                    break;
+                                            }
+                                        }
+                                    });
+                                } else {
+                                    builder2.setTitle("No Audio Streams Detected");
+                                    builder2.setAdapter(adapter2, new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            }
+                                    });
+                                }
+                                System.out.println(adapter2.getCount());
+                                builder2.show();
+                                break;
+                        }
+                        return false;
+                    }
+                });
             }
-        });*/
+        });
     }
 
     @Override

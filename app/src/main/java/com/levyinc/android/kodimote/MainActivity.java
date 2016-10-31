@@ -10,6 +10,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
@@ -53,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void run() {
                                 fragmentManager.beginTransaction().replace(R.id.content_frame, new SlidingTabActivity()).commit();
+                                toolbar.setElevation(0);
                             }
                         }, 300);
 
@@ -63,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void run() {
                                 fragmentManager.beginTransaction().replace(R.id.content_frame, new SettingsActivity()).commit();
+                                toolbar.setElevation(5);
 
                             }
                         }, 300);
@@ -96,6 +99,28 @@ public class MainActivity extends AppCompatActivity {
         //calling sync state is necessay or else your hamburger icon wont show up
         actionBarDrawerToggle.syncState();
 
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_items, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        switch (item.getItemId()) {
+            case (R.id.shutdown):
+                ButtonActions.powerButton("shutdown");
+
+                break;
+            case (R.id.reboot):
+                ButtonActions.powerButton("reboot");
+                break;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 
     @Override

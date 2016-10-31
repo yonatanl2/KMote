@@ -57,13 +57,13 @@
         android:layout_height="wrap_content"
         >
 
-    <Spinner
+    <ImageButton
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="6dp"
         android:layout_marginEnd="8dp"
         android:id="@+id/subtitle_button"
-        android:background="@drawable/ic_more_vert_black_24dp"
+        android:background="@drawable/ic_more_vert_white_18px"
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true" />
 
@@ -71,7 +71,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/subtitle_text"
-        android:text="@string/subtitles"
+        android:text="@string/more_actions"
         android:textColor="@android:color/black"
         android:layout_marginEnd="8dp"
         android:layout_marginTop="10dp"
@@ -131,6 +131,7 @@
         />
 
     <SeekBar
+        android:elevation="2dp"
         android:layout_marginTop="8dp"
         android:id="@+id/seek_bar"
         android:layout_width="match_parent"
@@ -153,16 +154,17 @@
 
         <ImageButton
             style="?android:attr/buttonBarButtonStyle"
+            android:elevation="2dp"
             android:layout_marginEnd="18dp"
             android:layout_marginStart="18dp"
             android:layout_width="0dp"
             android:layout_height="50dp"
             android:id="@+id/roll_back_extended"
             android:layout_weight="1"
-            android:elevation="0dp"
             android:visibility="visible" />
         <ImageButton
             style="?android:attr/buttonBarButtonStyle"
+            android:elevation="2dp"
             android:layout_marginEnd="18dp"
             android:layout_marginStart="18dp"
             android:layout_width="0dp"
@@ -172,6 +174,7 @@
 
         <ImageButton
             style="?android:attr/buttonBarButtonStyle"
+            android:elevation="2dp"
             android:layout_marginEnd="18dp"
             android:layout_marginStart="18dp"
             android:layout_width="0dp"
@@ -180,6 +183,7 @@
             android:layout_weight="1" />
         <ImageButton
             style="?android:attr/buttonBarButtonStyle"
+            android:elevation="2dp"
             android:layout_width="0dp"
             android:layout_height="50dp"
             android:layout_marginEnd="18dp"

@@ -108,8 +108,8 @@ public class Main2Activity extends Fragment {
                             paused = false;
                         }
                     } else {
-                        videoLayout.setVisibility(View.INVISIBLE);
-                        connecting.setVisibility(View.VISIBLE);
+                    videoLayout.setVisibility(View.INVISIBLE);
+                    connecting.setVisibility(View.VISIBLE);
                     }
                 remoteHandler.postDelayed(playCheck, 4000);
             }
@@ -152,12 +152,7 @@ public class Main2Activity extends Fragment {
         videoLayout = (LinearLayout) myView.findViewById(R.id.layout1);
         videoLayout.setVisibility(View.INVISIBLE);
         connecting.setVisibility(View.INVISIBLE);
-
-        if (ButtonActions.isPaused()){
-            playPause.setTag("play");
-        } else {
-            playPause.setTag("pause");
-        }
+        playPause.setTag("pause");
 
         return myView;
     }

@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.view.ViewPager;
 import android.support.v4.widget.NestedScrollView;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.PopupMenu;
@@ -113,7 +114,7 @@ public Runnable extendedInfoChecker = new Runnable() {
                 }
 
                 visibilityChanger(false);
-                if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null && currentContent != ButtonActions.getExtendedInfoString()) {
+                if (extendedInfoBitmaps.toArray().length > 2 && extendedInfoBitmaps.get(1) != null && currentContent != ButtonActions.getExtendedInfoString()) {
                     new imageGetter().execute(extendedImage.getWidth(), extendedImage.getHeight(), 1);
                     extendedHandler.postDelayed(extendedInfoChecker, 2000);
                 } else {
@@ -347,7 +348,7 @@ public Runnable extendedInfoChecker = new Runnable() {
 
         extendedActions.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(final View v) {
                 PopupMenu popupMenu = new PopupMenu(getActivity(), v);
                 MenuInflater menuInflater = popupMenu.getMenuInflater();
                 menuInflater.inflate(R.menu.extended_menu, popupMenu.getMenu());
@@ -358,6 +359,7 @@ public Runnable extendedInfoChecker = new Runnable() {
                     public boolean onMenuItemClick(MenuItem item) {
                         switch (item.toString()){
                             case ("Subtitles"):
+
                                 final ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), R.layout.list_view, ButtonActions.getSubtitleInfo());
                                 AlertDialog.Builder builder = new AlertDialog.Builder(getActivity(), R.style.myAlertDialog);
                                 builder.setTitle("Subtitles");
@@ -365,15 +367,20 @@ public Runnable extendedInfoChecker = new Runnable() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
                                         if (adapter.getItem(0).equals("Remove Subtitles")) {
+                                            ViewPager viewPager = (ViewPager) rootView.findViewById(R.id.remote_page_viewer);
                                             switch (which){
                                                 case 0:
                                                     ButtonActions.subtitleAction(which - 3);
                                                     break;
                                                 case 1:
                                                     ButtonActions.sync("subtitledelay");
+
+                                                    viewPager.setCurrentItem(1);
                                                     break;
                                                 case 2:
                                                     ButtonActions.getSubs();
+                                                    viewPager = (ViewPager) rootView.findViewById(R.id.remote_page_viewer);
+                                                    viewPager.setCurrentItem(1);
                                                     break;
                                                 default:
                                                     ButtonActions.subtitleAction(which - 3);
@@ -404,6 +411,8 @@ public Runnable extendedInfoChecker = new Runnable() {
                                             switch (which) {
                                                 case 0:
                                                     ButtonActions.sync("audiodelay");
+                                                    ViewPager viewPager = (ViewPager) rootView.findViewById(R.id.remote_page_viewer);
+                                                    viewPager.setCurrentItem(1);
                                                     break;
                                                 case 1:
                                                     ButtonActions.audiStreamAction(which - 1);

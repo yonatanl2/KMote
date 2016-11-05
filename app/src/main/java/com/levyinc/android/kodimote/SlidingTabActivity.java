@@ -15,7 +15,7 @@ import android.view.ViewGroup;
 
 public class SlidingTabActivity extends android.support.v4.app.Fragment {
 
-    public static ViewPager viewPager;
+    private ViewPager viewPager;
     private TabLayout tabLayout;
 
     FragmentAdapterClass fragmentPagerAdapter;
@@ -72,13 +72,14 @@ public class SlidingTabActivity extends android.support.v4.app.Fragment {
             }
         });
         viewPager.setCurrentItem(1);
-}
 
+}
 
     @Override
     public void onStop() {
         super.onStop();
     }
+
 }
 
 

@@ -47,16 +47,8 @@ class ButtonActions {
     private static boolean isPaused = false;
     private static boolean subtitleEnabled = false;
     private static String plot = null;
-    public static Handler buttonActionsHandler = new Handler(Looper.getMainLooper()) {
-        @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-            if (msg.toString().equals("shift")) {
-                SlidingTabActivity.viewPager.setCurrentItem(1, true);
-            }
-        }
-    };
 
+    public static Handler buttonActionsHandler = new Handler(Looper.getMainLooper());
 
     static boolean getStatus() {
         return status;
@@ -557,7 +549,8 @@ class ButtonActions {
         @Override
         protected void onPostExecute(Void aVoid) {
             if (playerInfoGotten()){
-                new AsynchLibraryQuerier().execute();
+                Thread thread = new Thread(new LibraryQuerier());
+                thread.start();
             }
             buttonActionsHandler.postDelayed(new Runnable() {
                 @Override
@@ -581,11 +574,10 @@ class ButtonActions {
     }
 
 
-    private static class AsynchLibraryQuerier extends AsyncTask<Void, Void, Void>{
+    private static class LibraryQuerier implements Runnable {
 
         @Override
-        protected Void doInBackground(Void... params) {
-
+        public void run() {
             try {
                 JSONObject jsonParam = new JSONObject();
                 jsonParam.put("jsonrpc", "2.0");
@@ -717,7 +709,6 @@ class ButtonActions {
             } catch (IOException | JSONException exception) {
                 exception.printStackTrace();
             }
-            return null;
         }
     }
 
@@ -934,10 +925,16 @@ class ButtonActions {
         thread.start();
     }
 
-    private static class AsyncSync extends AsyncTask<String, Void, Void>{
+    private static class ExecuteAction implements Runnable {
+
+        String action;
+
+        ExecuteAction (String action) {
+            this.action = action;
+        }
 
         @Override
-        protected Void doInBackground(String... params) {
+        public void run() {
             try {
 
                 JSONObject jsonParam = new JSONObject();
@@ -946,7 +943,7 @@ class ButtonActions {
                 jsonParam.put("id", 1);
 
                 JSONObject jsonParam2 = new JSONObject();
-                jsonParam2.put("action", params[0]);
+                jsonParam2.put("action", action);
                 jsonParam.put("params", jsonParam2);
                 new URL(request + jsonParam).openStream();
 
@@ -954,17 +951,12 @@ class ButtonActions {
             } catch (IOException | JSONException exception) {
                 exception.printStackTrace();
             }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            SlidingTabActivity.viewPager.setCurrentItem(1, true);
         }
     }
 
-    static void sync(String method) {
-        new AsyncSync().execute(method);
+    static void sync(String action) {
+        Thread thread = new Thread(new ExecuteAction(action));
+        thread.start();
     }
 
     static ArrayList<String> getAudioStreamInfo() {
@@ -1019,6 +1011,32 @@ class ButtonActions {
         thread.start();
     }
 
+    static void volumeAction(String action){
+        Thread thread = new Thread(new ExecuteAction(action));
+        thread.start();
+    }
+
+    private static class HomeButton implements Runnable {
+        @Override
+        public void run() {
+            try {
+
+                JSONObject jsonParam = new JSONObject();
+                jsonParam.put("jsonrpc", "2.0");
+                jsonParam.put("method", "Input.Home");
+                jsonParam.put("id", 1);
+                new URL(request + jsonParam).openStream();
+
+            } catch (IOException | JSONException exception) {
+                exception.printStackTrace();
+            }
+        }
+    }
+
+    static void homeButton() {
+        Thread thread = new Thread(new HomeButton());
+        thread.start();
+    }
 }
 
 

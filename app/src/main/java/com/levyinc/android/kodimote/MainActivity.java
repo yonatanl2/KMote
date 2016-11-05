@@ -10,6 +10,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -20,7 +21,23 @@ public class MainActivity extends AppCompatActivity {
     private Toolbar toolbar;
     final FragmentManager fragmentManager = getSupportFragmentManager();
 
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+            ButtonActions.volumeAction("volumedown");
+            return true;
+        } else if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
+            ButtonActions.volumeAction("volumeup");
+            return true;
+        } else {
+            return super.onKeyDown(keyCode, event);
+        }
+    }
 
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        return true;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,6 +115,8 @@ public class MainActivity extends AppCompatActivity {
 
         //calling sync state is necessay or else your hamburger icon wont show up
         actionBarDrawerToggle.syncState();
+
+
 
     }
 

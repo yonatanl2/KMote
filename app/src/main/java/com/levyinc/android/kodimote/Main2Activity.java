@@ -15,8 +15,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
+
+import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 
 public class Main2Activity extends Fragment {
@@ -41,6 +45,11 @@ public class Main2Activity extends Fragment {
     ImageButton stop;
     ImageButton rollBack;
     ImageButton fastForward;
+    ImageButton homeButton;
+    ImageView upArrowDrawer;
+    ImageView downArrowDrawer;
+    RelativeLayout additionalButtonsLayout;
+    SlidingUpPanelLayout slidingUpPanelLayout;
 
     Thread scalingThread = new Thread(new Runnable() {
         @Override
@@ -152,6 +161,15 @@ public class Main2Activity extends Fragment {
         videoLayout = (LinearLayout) myView.findViewById(R.id.layout1);
         videoLayout.setVisibility(View.INVISIBLE);
         connecting.setVisibility(View.INVISIBLE);
+
+        homeButton = (ImageButton) myView.findViewById(R.id.home_button);
+        upArrowDrawer = (ImageView) myView.findViewById(R.id.drawer_arrow);
+        downArrowDrawer = (ImageView) myView.findViewById(R.id.drawer_arrow_down);
+        additionalButtonsLayout = (RelativeLayout) myView.findViewById(R.id.additional_buttons_layout);
+        slidingUpPanelLayout = (SlidingUpPanelLayout) myView.findViewById(R.id.sliding_up_pane);
+
+        downArrowDrawer.setVisibility(View.INVISIBLE);
+
         playPause.setTag("pause");
 
         return myView;
@@ -161,8 +179,33 @@ public class Main2Activity extends Fragment {
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        remoteHandler.post(scalingThread);
         sharedPreferences = getActivity().getSharedPreferences("connection_info", Context.MODE_PRIVATE);
+        if (sharedPreferences.getString("successful_connection", "").equals("y")) {
+            remoteHandler.postDelayed(connectionThread, 100);
+            remoteHandler.postDelayed(intialHandlerSetter, 300);
+            remoteHandler.postDelayed(playCheck, 500);
 
+        }
+
+        slidingUpPanelLayout.addPanelSlideListener(new SlidingUpPanelLayout.PanelSlideListener() {
+            @Override
+            public void onPanelSlide(View panel, float slideOffset) {
+                additionalButtonsLayout.setAlpha(slideOffset);
+                if (slideOffset == 1.0) {
+                    downArrowDrawer.setVisibility(View.VISIBLE);
+                    upArrowDrawer.setVisibility(View.INVISIBLE);
+                } else if (slideOffset == 0) {
+                    upArrowDrawer.setVisibility(View.VISIBLE);
+                    downArrowDrawer.setVisibility(View.INVISIBLE);
+                }
+            }
+
+            @Override
+            public void onPanelStateChanged(View panel, SlidingUpPanelLayout.PanelState previousState, SlidingUpPanelLayout.PanelState newState) {
+
+            }
+        });
 
         Button back = (Button) myView.findViewById(R.id.back_button);
         back.setOnClickListener(new View.OnClickListener(){
@@ -298,6 +341,13 @@ public class Main2Activity extends Fragment {
             public void onClick(View view){
                 ButtonActions.playPause();
                 paused = !paused;
+            }
+        });
+
+        homeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ButtonActions.homeButton();
             }
         });
 

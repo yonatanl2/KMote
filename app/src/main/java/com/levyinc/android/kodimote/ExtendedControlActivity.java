@@ -99,6 +99,7 @@ public Runnable extendedInfoChecker = new Runnable() {
     public void run() {
         if (ButtonActions.getStatus()) {
             if (ButtonActions.playerInfoGotten()) {
+                extendedInfoBitmaps = new ArrayList<>();
                 extendedInfoBitmaps = ButtonActions.getExtendedInfoBitmaps();
                 if (ButtonActions.extendedInfoGottenNums()) {
                     ArrayList<Integer> nums = ButtonActions.getVideoDetailsNums();
@@ -114,8 +115,16 @@ public Runnable extendedInfoChecker = new Runnable() {
                 }
 
                 visibilityChanger(false);
-                if (extendedInfoBitmaps.toArray().length > 2 && extendedInfoBitmaps.get(1) != null && currentContent != ButtonActions.getExtendedInfoString()) {
+                if (extendedInfoBitmaps.toArray().length > 2) {
+                    System.out.println("Bigger than 2!!!!!!" + extendedInfoBitmaps);
+                }
+                else if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null && currentContent != ButtonActions.getExtendedInfoString()) {
+                    System.out.println(extendedInfoBitmaps);
                     new imageGetter().execute(extendedImage.getWidth(), extendedImage.getHeight(), 1);
+                    extendedHandler.postDelayed(extendedInfoChecker, 2000);
+                } else if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(0) != null && currentContent != ButtonActions.getExtendedInfoString()) {
+                    System.out.println(extendedInfoBitmaps);
+                    new imageGetter().execute(extendedImage.getWidth(), extendedImage.getHeight(), 0);
                     extendedHandler.postDelayed(extendedInfoChecker, 2000);
                 } else {
                     extendedHandler.postDelayed(extendedInfoChecker, 2000);}
@@ -352,6 +361,7 @@ public Runnable extendedInfoChecker = new Runnable() {
                 PopupMenu popupMenu = new PopupMenu(getActivity(), v);
                 MenuInflater menuInflater = popupMenu.getMenuInflater();
                 menuInflater.inflate(R.menu.extended_menu, popupMenu.getMenu());
+                final ViewPager viewPager = (ViewPager) getActivity().findViewById(R.id.remote_page_viewer);
 
                 popupMenu.show();
                 popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
@@ -359,7 +369,6 @@ public Runnable extendedInfoChecker = new Runnable() {
                     public boolean onMenuItemClick(MenuItem item) {
                         switch (item.toString()){
                             case ("Subtitles"):
-
                                 final ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), R.layout.list_view, ButtonActions.getSubtitleInfo());
                                 AlertDialog.Builder builder = new AlertDialog.Builder(getActivity(), R.style.myAlertDialog);
                                 builder.setTitle("Subtitles");
@@ -367,19 +376,16 @@ public Runnable extendedInfoChecker = new Runnable() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
                                         if (adapter.getItem(0).equals("Remove Subtitles")) {
-                                            ViewPager viewPager = (ViewPager) rootView.findViewById(R.id.remote_page_viewer);
                                             switch (which){
                                                 case 0:
                                                     ButtonActions.subtitleAction(which - 3);
                                                     break;
                                                 case 1:
                                                     ButtonActions.sync("subtitledelay");
-
                                                     viewPager.setCurrentItem(1);
                                                     break;
                                                 case 2:
                                                     ButtonActions.getSubs();
-                                                    viewPager = (ViewPager) rootView.findViewById(R.id.remote_page_viewer);
                                                     viewPager.setCurrentItem(1);
                                                     break;
                                                 default:
@@ -411,7 +417,6 @@ public Runnable extendedInfoChecker = new Runnable() {
                                             switch (which) {
                                                 case 0:
                                                     ButtonActions.sync("audiodelay");
-                                                    ViewPager viewPager = (ViewPager) rootView.findViewById(R.id.remote_page_viewer);
                                                     viewPager.setCurrentItem(1);
                                                     break;
                                                 case 1:

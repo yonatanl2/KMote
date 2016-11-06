@@ -47,6 +47,7 @@ class ButtonActions {
     private static boolean isPaused = false;
     private static boolean subtitleEnabled = false;
     private static String plot = null;
+    private static boolean isMuted;
 
     public static Handler buttonActionsHandler = new Handler(Looper.getMainLooper());
 
@@ -652,13 +653,13 @@ class ButtonActions {
                             } catch (IOException exception) {
                                 exception.printStackTrace();
                             }
-                        } else if (seriesMatch.find() && imageMatcher.find()) {
+                        } else if (seriesMatch.find()) {
                             try {
-                                bitmapArrayList = new ArrayList<>();
                                 bitmapArrayList = new ArrayList<>();
                                 URL url = new URL(URLDecoder.decode(seriesMatch.group(), "UTF-8"));
                                 Bitmap decodedImage = BitmapFactory.decodeStream(url.openConnection().getInputStream());
                                 bitmapArrayList.add(decodedImage);
+                                bitmapArrayList.add(null);
                             } catch (IOException exception) {
                                 exception.printStackTrace();
                             }
@@ -666,6 +667,7 @@ class ButtonActions {
                         } else if (imageMatcher.find()) {
                             try {
                                 bitmapArrayList = new ArrayList<>();
+                                bitmapArrayList.add(null);
                                 URL url = new URL(URLDecoder.decode(imageMatcher.group(), "UTF-8"));
                                 Bitmap decodedImage2 = BitmapFactory.decodeStream(url.openStream());
                                 bitmapArrayList.add(decodedImage2);
@@ -674,8 +676,8 @@ class ButtonActions {
                             }
                         } else {
                             bitmapArrayList = new ArrayList<>();
-                            bitmapArrayList.add(0, null);
-                            bitmapArrayList.add(1, null);
+                            bitmapArrayList.add(null);
+                            bitmapArrayList.add(null);
                         }
                     }
                 }
@@ -1014,6 +1016,9 @@ class ButtonActions {
     static void volumeAction(String action){
         Thread thread = new Thread(new ExecuteAction(action));
         thread.start();
+        if (!isMuted) {
+            isMuted = true;
+        }
     }
 
     private static class HomeButton implements Runnable {
@@ -1037,6 +1042,71 @@ class ButtonActions {
         Thread thread = new Thread(new HomeButton());
         thread.start();
     }
+
+    private static class SetVolumePercentage implements Runnable {
+
+        int percentage;
+
+        SetVolumePercentage (int percentage) {
+            this.percentage = percentage;
+        }
+
+        @Override
+        public void run() {
+            try {
+
+                JSONObject jsonParam = new JSONObject();
+                jsonParam.put("jsonrpc", "2.0");
+                jsonParam.put("method", "Application.SetVolume");
+                jsonParam.put("id", 1);
+
+                JSONObject jsonParam2 = new JSONObject();
+                jsonParam2.put("volume", percentage);
+                jsonParam.put("params", jsonParam2);
+
+                new URL(request + jsonParam).openStream();
+
+            } catch (IOException | JSONException exception) {
+                exception.printStackTrace();
+            }
+        }
+    }
+
+    static void volumePercentageSetter(int percentage){
+        Thread thread = new Thread(new SetVolumePercentage(percentage));
+        thread.start();
+    }
+
+    private static class MuteThread implements Runnable {
+
+        @Override
+        public void run() {
+            try {
+
+                JSONObject jsonParam = new JSONObject();
+                jsonParam.put("jsonrpc", "2.0");
+                jsonParam.put("method", "Application.SetMute");
+                jsonParam.put("id", 1);
+
+
+                JSONObject jsonParam2 = new JSONObject();
+                jsonParam2.put("mute", !isMuted);
+                jsonParam.put("params", jsonParam2);
+                new URL(request + jsonParam).openStream();
+
+                isMuted = !isMuted;
+
+            } catch (IOException | JSONException exception) {
+                exception.printStackTrace();
+            }
+        }
+    }
+
+    static void muteButton() {
+        Thread thread = new Thread(new MuteThread());
+        thread.start();
+    }
+
 }
 
 

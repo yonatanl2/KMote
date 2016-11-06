@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -18,6 +19,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
@@ -49,7 +51,9 @@ public class Main2Activity extends Fragment {
     ImageView upArrowDrawer;
     ImageView downArrowDrawer;
     RelativeLayout additionalButtonsLayout;
+    RelativeLayout remoteLayout;
     SlidingUpPanelLayout slidingUpPanelLayout;
+    ImageButton volumeSeek;
 
     Thread scalingThread = new Thread(new Runnable() {
         @Override
@@ -162,15 +166,26 @@ public class Main2Activity extends Fragment {
         videoLayout.setVisibility(View.INVISIBLE);
         connecting.setVisibility(View.INVISIBLE);
 
+        ImageButton muteButton = (ImageButton) myView.findViewById(R.id.mute_button);
         homeButton = (ImageButton) myView.findViewById(R.id.home_button);
         upArrowDrawer = (ImageView) myView.findViewById(R.id.drawer_arrow);
         downArrowDrawer = (ImageView) myView.findViewById(R.id.drawer_arrow_down);
         additionalButtonsLayout = (RelativeLayout) myView.findViewById(R.id.additional_buttons_layout);
         slidingUpPanelLayout = (SlidingUpPanelLayout) myView.findViewById(R.id.sliding_up_pane);
+        remoteLayout = (RelativeLayout) myView.findViewById(R.id.remote_activity);
+        volumeSeek = (ImageButton) myView.findViewById(R.id.set_volume);
+
 
         downArrowDrawer.setVisibility(View.INVISIBLE);
 
         playPause.setTag("pause");
+
+        muteButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ButtonActions.muteButton();
+            }
+        });
 
         return myView;
     }
@@ -203,6 +218,42 @@ public class Main2Activity extends Fragment {
 
             @Override
             public void onPanelStateChanged(View panel, SlidingUpPanelLayout.PanelState previousState, SlidingUpPanelLayout.PanelState newState) {
+
+            }
+        });
+
+        volumeSeek.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                LayoutInflater inflater = (LayoutInflater) getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                View layout = inflater.inflate(R.layout.seekbar_layout, (ViewGroup) myView.findViewById(R.id.seek_bar_layout));
+                AlertDialog.Builder builder = new AlertDialog.Builder(getActivity(), R.style.myAlertDialog);
+                builder.setTitle("Set Volume");
+                builder.setView(layout);
+                builder.create();
+                builder.show();
+                SeekBar volumeBar = (SeekBar) layout.findViewById(R.id.volume_seek_bar);
+                volumeBar.setMax(100);
+                volumeBar.setProgress(100);
+                volumeBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                    @Override
+                    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                        if (fromUser) {
+                            ButtonActions.volumePercentageSetter(progress);
+                        }
+                    }
+
+                    @Override
+                    public void onStartTrackingTouch(SeekBar seekBar) {
+
+                    }
+
+                    @Override
+                    public void onStopTrackingTouch(SeekBar seekBar) {
+
+                    }
+                });
+
 
             }
         });
@@ -380,6 +431,7 @@ public class Main2Activity extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        playPause.setTag("pause");
         if (sharedPreferences.getString("successful_connection", "").equals("y")) {
             remoteHandler.post(scalingThread);
             remoteHandler.postDelayed(connectionThread, 100);

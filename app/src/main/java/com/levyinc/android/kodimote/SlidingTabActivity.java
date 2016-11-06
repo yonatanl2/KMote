@@ -27,8 +27,6 @@ public class SlidingTabActivity extends android.support.v4.app.Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         rootView = inflater.inflate(R.layout.remote_tab_viewer, container, false);
-
-
         viewPager = (ViewPager) rootView.findViewById(R.id.remote_page_viewer);
         tabLayout = (TabLayout) rootView.findViewById(R.id.remote_tab_layout);
 
@@ -74,6 +72,8 @@ public class SlidingTabActivity extends android.support.v4.app.Fragment {
         viewPager.setCurrentItem(1);
 
 }
+
+
 
     @Override
     public void onStop() {

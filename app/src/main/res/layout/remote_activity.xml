@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:gravity="bottom"
     sothree:umanoFadeColor="@android:color/transparent"
-    sothree:umanoPanelHeight="15dp"
+    sothree:umanoPanelHeight="20dp"
     sothree:umanoOverlay="true"
     sothree:umanoShadowHeight="0dp"
     android:id="@+id/sliding_up_pane"
@@ -218,7 +218,7 @@
             android:layout_below="@id/player_actions_layout"
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="19dp"
             android:id="@+id/drawer_separator"
             android:background="@android:color/darker_gray"/>
 

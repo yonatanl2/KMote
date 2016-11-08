@@ -50,6 +50,8 @@ public class Main2Activity extends Fragment {
     ImageButton homeButton;
     ImageView upArrowDrawer;
     ImageView downArrowDrawer;
+    ImageButton setShuffleButton;
+    ImageButton setRepeatButton;
     RelativeLayout additionalButtonsLayout;
     RelativeLayout remoteLayout;
     SlidingUpPanelLayout slidingUpPanelLayout;
@@ -174,6 +176,8 @@ public class Main2Activity extends Fragment {
         slidingUpPanelLayout = (SlidingUpPanelLayout) myView.findViewById(R.id.sliding_up_pane);
         remoteLayout = (RelativeLayout) myView.findViewById(R.id.remote_activity);
         volumeSeek = (ImageButton) myView.findViewById(R.id.set_volume);
+        setRepeatButton = (ImageButton) myView.findViewById(R.id.set_repeat);
+        setShuffleButton = (ImageButton) myView.findViewById(R.id.set_shuffle);
 
 
         downArrowDrawer.setVisibility(View.INVISIBLE);
@@ -202,6 +206,20 @@ public class Main2Activity extends Fragment {
             remoteHandler.postDelayed(playCheck, 500);
 
         }
+
+        setRepeatButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ButtonActions.setIsRepeat();
+            }
+        });
+
+        setShuffleButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ButtonActions.setIsShuffled();
+            }
+        });
 
         slidingUpPanelLayout.addPanelSlideListener(new SlidingUpPanelLayout.PanelSlideListener() {
             @Override
@@ -250,7 +268,6 @@ public class Main2Activity extends Fragment {
 
                     @Override
                     public void onStopTrackingTouch(SeekBar seekBar) {
-
                     }
                 });
 

@@ -23,6 +23,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -47,9 +49,17 @@ class ButtonActions {
     private static boolean isPaused = false;
     private static boolean subtitleEnabled = false;
     private static String plot = null;
-    private static boolean isMuted;
+    private static boolean isShuffled;
+    private static boolean isRepeat;
 
-    public static Handler buttonActionsHandler = new Handler(Looper.getMainLooper());
+    public static Handler buttonActionsHandler = new Handler(Looper.getMainLooper()){
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            System.out.println(msg.obj);
+        }
+    };
+    private static Lock lock = new ReentrantLock();
 
     static boolean getStatus() {
         return status;
@@ -536,6 +546,141 @@ class ButtonActions {
                                             }
                                             matches++;
                                         }
+
+                                        if (playerInfoGotten()){
+
+                                            try {
+                                                jsonParam = new JSONObject();
+
+                                                jsonParam.put("jsonrpc", "2.0");
+                                                jsonParam.put("method", "Player.getItem");
+                                                jsonParam.put("id", "VideoGetItem");
+
+                                            if (playerInfo.toArray().length > 0) {
+
+                                                pattern2 = Pattern.compile("\\d$");
+                                                matcher2 = pattern2.matcher(playerInfo.get(0));
+
+                                                if (matcher2.find()) {
+
+                                                    jsonParam2 = new JSONObject();
+                                                    jsonParam2.put("playerid", parseInt(matcher2.group()));
+                                                    properties = "[plot\", \"rating\", \"art\", \"title\" ,\"album\", \"artist\", \"season\", \"episode\", \"duration\", \"showtitle\", \"tvshowid\", \"thumbnail\", \"file\", \"fanart\", \"streamdetails]";
+                                                    jsonParam2.put("properties", properties);
+                                                    jsonParam.put("params", jsonParam2);
+                                                }
+                                            }
+
+                                            jsonParamString = (jsonParam.toString().replaceAll("\"\\[" , "[\""));
+                                            jsonParamString = (jsonParamString.replaceAll("\\]\"" , "\"]"));
+                                            jsonParamString = (jsonParamString.replaceAll("\\\\",""));
+                                            query = URLEncoder.encode(jsonParamString, "UTF-8");
+
+                                             inputStream = new URL(request + query).openStream();
+
+                                             br = new BufferedReader(new InputStreamReader(inputStream));
+                                            jsonString = new StringBuffer();
+                                            while ((line = br.readLine()) != null) {
+                                                jsonString.append(line);
+                                            }
+
+                                            br.close();
+
+                                            Pattern seasonPattern = Pattern.compile("(?<=season\":)\\d*");
+                                            Matcher seasonMatcher = seasonPattern.matcher(jsonString);
+
+                                            Pattern episodePattern = Pattern.compile("(?<=episode\":)\\d*");
+                                            Matcher episodeMatcher = episodePattern.matcher(jsonString);
+
+                                            Pattern showPattern = Pattern.compile("(?<=showtitle\":\").*(?=\",\"stream)");
+                                            Matcher showMatcher = showPattern.matcher(jsonString);
+
+                                            Pattern episodeNamePattern = Pattern.compile("(?<=label\":\").*(?=\",\"plot)");
+                                            Matcher episodeNameMatcher = episodeNamePattern.matcher(jsonString);
+
+                                            Pattern plotPattern = Pattern.compile("(?<=plot\":\").*(?=\",\"rating)");
+                                            Matcher plotMatcher = plotPattern.matcher(jsonString);
+
+                                            Pattern seriesImagePattern = Pattern.compile("(?<=\"poster\":\"image://)http.*(?=/\",\"season)");
+                                            Matcher seriesMatch = seriesImagePattern.matcher(jsonString);
+
+                                            Pattern imagePattern = Pattern.compile("(?<=thumbnail\":\"image://)http.*(?=/\")");
+                                            Matcher imageMatcher = imagePattern.matcher(jsonString);
+
+                                            if (episodeNameMatcher.find()) {
+                                                if (episodeNameMatcher.group().equals(episodeName) || episodeName == null) {
+                                                    if (seriesMatch.find() && imageMatcher.find()) {
+                                                        try {
+                                                            bitmapArrayList = new ArrayList<>();
+                                                            URL url = new URL(URLDecoder.decode(seriesMatch.group(), "UTF-8"));
+                                                            Bitmap decodedImage = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+                                                            bitmapArrayList.add(decodedImage);
+
+                                                            url = new URL(URLDecoder.decode(imageMatcher.group(), "UTF-8"));
+                                                            Bitmap decodedImage2 = BitmapFactory.decodeStream(url.openStream());
+                                                            bitmapArrayList.add(decodedImage2);
+
+                                                        } catch (IOException exception) {
+                                                            exception.printStackTrace();
+                                                        }
+                                                    } else if (seriesMatch.find()) {
+                                                        try {
+                                                            bitmapArrayList = new ArrayList<>();
+                                                            URL url = new URL(URLDecoder.decode(seriesMatch.group(), "UTF-8"));
+                                                            Bitmap decodedImage = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+                                                            bitmapArrayList.add(decodedImage);
+                                                            bitmapArrayList.add(null);
+                                                        } catch (IOException exception) {
+                                                            exception.printStackTrace();
+                                                        }
+
+                                                    } else if (imageMatcher.find()) {
+                                                        try {
+                                                            bitmapArrayList = new ArrayList<>();
+                                                            bitmapArrayList.add(null);
+                                                            URL url = new URL(URLDecoder.decode(imageMatcher.group(), "UTF-8"));
+                                                            Bitmap decodedImage2 = BitmapFactory.decodeStream(url.openStream());
+                                                            bitmapArrayList.add(decodedImage2);
+                                                        } catch (IOException exception) {
+                                                            exception.printStackTrace();
+                                                        }
+                                                    } else {
+                                                        bitmapArrayList = new ArrayList<>();
+                                                        bitmapArrayList.add(null);
+                                                        bitmapArrayList.add(null);
+                                                    }
+                                                }
+                                            }
+
+                                            if (showMatcher.find()) {
+                                                seriesName = showMatcher.group();
+                                            }
+
+                                            episodeNamePattern = Pattern.compile("(?<=label\":\").*(?=\",\"plot)");
+                                            episodeNameMatcher = episodeNamePattern.matcher(jsonString);
+
+                                            if (episodeNameMatcher.find()) {
+                                                episodeName = (episodeNameMatcher.group());
+                                            }
+
+
+                                            if (seasonMatcher.find() && episodeMatcher.find()) {
+                                                try {
+                                                    videoDetailsNums = new ArrayList<>();
+                                                    videoDetailsNums.add(parseInt(seasonMatcher.group()));
+                                                    videoDetailsNums.add(parseInt(episodeMatcher.group()));
+                                                } catch (NumberFormatException exception) {
+                                                    exception.printStackTrace();
+                                                }
+                                            }
+                                            if (plotMatcher.find()) {
+                                                plot = plotMatcher.group();
+                                            }
+
+                                        } catch (IOException | JSONException exception) {
+                                            exception.printStackTrace();
+                                        }
+                                        }
                                     }
                                 }
                             }
@@ -549,10 +694,6 @@ class ButtonActions {
 
         @Override
         protected void onPostExecute(Void aVoid) {
-            if (playerInfoGotten()){
-                Thread thread = new Thread(new LibraryQuerier());
-                thread.start();
-            }
             buttonActionsHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
@@ -561,6 +702,8 @@ class ButtonActions {
             }, 1500);
         }
     }
+
+
 
         static void getInfo() {
             new AsynchInfoChecker().execute();
@@ -572,146 +715,6 @@ class ButtonActions {
 
     static boolean playerInfoGotten() {
         return (!(playerInfo.isEmpty()) && playerInfo.toArray().length > 0);
-    }
-
-
-    private static class LibraryQuerier implements Runnable {
-
-        @Override
-        public void run() {
-            try {
-                JSONObject jsonParam = new JSONObject();
-                jsonParam.put("jsonrpc", "2.0");
-                jsonParam.put("method", "Player.getItem");
-                jsonParam.put("id", "VideoGetItem");
-
-                if (playerInfo.toArray().length > 0) {
-
-                    Pattern pattern2 = Pattern.compile("\\d$");
-                    Matcher matcher2 = pattern2.matcher(playerInfo.get(0));
-
-                    if (matcher2.find()) {
-
-                        JSONObject jsonParam2 = new JSONObject();
-                        jsonParam2.put("playerid", parseInt(matcher2.group()));
-                        String properties = "[plot\", \"rating\", \"art\", \"title\" ,\"album\", \"artist\", \"season\", \"episode\", \"duration\", \"showtitle\", \"tvshowid\", \"thumbnail\", \"file\", \"fanart\", \"streamdetails]";
-                        jsonParam2.put("properties", properties);
-                        jsonParam.put("params", jsonParam2);
-                    }
-                }
-
-                String jsonParamString = (jsonParam.toString().replaceAll("\"\\[" , "[\""));
-                jsonParamString = (jsonParamString.replaceAll("\\]\"" , "\"]"));
-                jsonParamString = (jsonParamString.replaceAll("\\\\",""));
-                String query = URLEncoder.encode(jsonParamString, "UTF-8");
-
-                InputStream inputStream = new URL(request + query).openStream();
-
-                BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
-                StringBuffer jsonString = new StringBuffer();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    jsonString.append(line);
-                }
-
-                br.close();
-
-                Pattern seasonPattern = Pattern.compile("(?<=season\":)\\d*");
-                Matcher seasonMatcher = seasonPattern.matcher(jsonString);
-
-                Pattern episodePattern = Pattern.compile("(?<=episode\":)\\d*");
-                Matcher episodeMatcher = episodePattern.matcher(jsonString);
-
-                Pattern showPattern = Pattern.compile("(?<=showtitle\":\").*(?=\",\"stream)");
-                Matcher showMatcher = showPattern.matcher(jsonString);
-
-                Pattern episodeNamePattern = Pattern.compile("(?<=label\":\").*(?=\",\"plot)");
-                Matcher episodeNameMatcher = episodeNamePattern.matcher(jsonString);
-
-                Pattern plotPattern = Pattern.compile("(?<=plot\":\").*(?=\",\"rating)");
-                Matcher plotMatcher = plotPattern.matcher(jsonString);
-
-                Pattern seriesImagePattern = Pattern.compile("(?<=\"poster\":\"image://)http.*(?=/\",\"season)");
-                Matcher seriesMatch = seriesImagePattern.matcher(jsonString);
-
-                Pattern imagePattern = Pattern.compile("(?<=thumbnail\":\"image://)http.*(?=/\")");
-                Matcher imageMatcher = imagePattern.matcher(jsonString);
-
-                if (episodeNameMatcher.find()) {
-                    if (episodeNameMatcher.group().equals(episodeName) || episodeName == null) {
-                        if (seriesMatch.find() && imageMatcher.find()) {
-                            try {
-                                bitmapArrayList = new ArrayList<>();
-                                URL url = new URL(URLDecoder.decode(seriesMatch.group(), "UTF-8"));
-                                Bitmap decodedImage = BitmapFactory.decodeStream(url.openConnection().getInputStream());
-                                bitmapArrayList.add(decodedImage);
-
-                                url = new URL(URLDecoder.decode(imageMatcher.group(), "UTF-8"));
-                                Bitmap decodedImage2 = BitmapFactory.decodeStream(url.openStream());
-                                bitmapArrayList.add(decodedImage2);
-
-                            } catch (IOException exception) {
-                                exception.printStackTrace();
-                            }
-                        } else if (seriesMatch.find()) {
-                            try {
-                                bitmapArrayList = new ArrayList<>();
-                                URL url = new URL(URLDecoder.decode(seriesMatch.group(), "UTF-8"));
-                                Bitmap decodedImage = BitmapFactory.decodeStream(url.openConnection().getInputStream());
-                                bitmapArrayList.add(decodedImage);
-                                bitmapArrayList.add(null);
-                            } catch (IOException exception) {
-                                exception.printStackTrace();
-                            }
-
-                        } else if (imageMatcher.find()) {
-                            try {
-                                bitmapArrayList = new ArrayList<>();
-                                bitmapArrayList.add(null);
-                                URL url = new URL(URLDecoder.decode(imageMatcher.group(), "UTF-8"));
-                                Bitmap decodedImage2 = BitmapFactory.decodeStream(url.openStream());
-                                bitmapArrayList.add(decodedImage2);
-                            } catch (IOException exception) {
-                                exception.printStackTrace();
-                            }
-                        } else {
-                            bitmapArrayList = new ArrayList<>();
-                            bitmapArrayList.add(null);
-                            bitmapArrayList.add(null);
-                        }
-                    }
-                }
-
-                if (showMatcher.find()) {
-                    seriesName = showMatcher.group();
-                }
-
-                episodeNamePattern = Pattern.compile("(?<=label\":\").*(?=\",\"plot)");
-                episodeNameMatcher = episodeNamePattern.matcher(jsonString);
-
-                if (episodeNameMatcher.find()) {
-                    episodeName = (episodeNameMatcher.group());
-                }
-
-
-            if (seasonMatcher.find() && episodeMatcher.find()) {
-                try {
-                    videoDetailsNums = new ArrayList<>();
-                    videoDetailsNums.add(parseInt(seasonMatcher.group()));
-                    videoDetailsNums.add(parseInt(episodeMatcher.group()));
-                } catch (NumberFormatException exception) {
-                    exception.printStackTrace();
-                }
-            }
-
-                if (plotMatcher.find()) {
-                    plot = plotMatcher.group();
-                }
-
-            } catch (IOException | JSONException exception) {
-                exception.printStackTrace();
-            }
-        }
     }
 
 
@@ -734,10 +737,6 @@ class ButtonActions {
             } catch (IOException | JSONException exception) {
                 exception.printStackTrace();
             }
-            Message msg = new Message();
-            msg.obj = "shift";
-            buttonActionsHandler.sendMessage(msg);
-            buttonActionsHandler.obtainMessage();
         }
     }
 
@@ -1016,9 +1015,6 @@ class ButtonActions {
     static void volumeAction(String action){
         Thread thread = new Thread(new ExecuteAction(action));
         thread.start();
-        if (!isMuted) {
-            isMuted = true;
-        }
     }
 
     private static class HomeButton implements Runnable {
@@ -1085,16 +1081,14 @@ class ButtonActions {
 
                 JSONObject jsonParam = new JSONObject();
                 jsonParam.put("jsonrpc", "2.0");
-                jsonParam.put("method", "Application.SetMute");
+                jsonParam.put("method", "Input.ExecuteAction");
                 jsonParam.put("id", 1);
 
-
                 JSONObject jsonParam2 = new JSONObject();
-                jsonParam2.put("mute", !isMuted);
+                jsonParam2.put("action", "mute");
                 jsonParam.put("params", jsonParam2);
                 new URL(request + jsonParam).openStream();
 
-                isMuted = !isMuted;
 
             } catch (IOException | JSONException exception) {
                 exception.printStackTrace();
@@ -1106,7 +1100,73 @@ class ButtonActions {
         Thread thread = new Thread(new MuteThread());
         thread.start();
     }
+    private static class ShuffleThread implements Runnable {
 
+        @Override
+        public void run() {
+            try {
+                Pattern pattern3 = Pattern.compile("\\d$");
+                Matcher matcher3 = pattern3.matcher(playerInfo.get(0));
+
+                if (matcher3.find()) {
+                    JSONObject jsonParam = new JSONObject();
+                    jsonParam.put("jsonrpc", "2.0");
+                    jsonParam.put("method", "Player.SetShuffle");
+                    jsonParam.put("id", 1);
+
+
+                    JSONObject jsonParam2 = new JSONObject();
+                    jsonParam2.put("playedid", parseInt(matcher3.group()));
+                    jsonParam2.put("shuffle", !isShuffled);
+                    jsonParam.put("params", jsonParam2);
+                    new URL(request + jsonParam).openStream();
+
+                    isShuffled = !isShuffled;
+                }
+            } catch (IOException | JSONException exception) {
+                exception.printStackTrace();
+            }
+        }
+    }
+
+    static void setIsShuffled() {
+        Thread thread = new Thread(new ShuffleThread());
+        thread.start();
+    }
+
+    private static class RepeatThread implements Runnable {
+
+        @Override
+        public void run() {
+            try {
+                Pattern pattern3 = Pattern.compile("\\d$");
+                Matcher matcher3 = pattern3.matcher(playerInfo.get(0));
+
+                if (matcher3.find()) {
+                    JSONObject jsonParam = new JSONObject();
+                    jsonParam.put("jsonrpc", "2.0");
+                    jsonParam.put("method", "Player.SetShuffle");
+                    jsonParam.put("id", 1);
+
+
+                    JSONObject jsonParam2 = new JSONObject();
+                    jsonParam2.put("playedid", parseInt(matcher3.group()));
+                    jsonParam2.put("shuffle", !isRepeat);
+                    jsonParam.put("params", jsonParam2);
+                    new URL(request + jsonParam).openStream();
+
+                    isRepeat = !isRepeat;
+                }
+            } catch (IOException | JSONException exception) {
+                exception.printStackTrace();
+            }
+        }
+    }
+
+    static void setIsRepeat() {
+        Thread thread = new Thread(new RepeatThread());
+        thread.start();
+    }
 }
 
 

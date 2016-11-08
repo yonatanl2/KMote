@@ -99,7 +99,6 @@ public Runnable extendedInfoChecker = new Runnable() {
     public void run() {
         if (ButtonActions.getStatus()) {
             if (ButtonActions.playerInfoGotten()) {
-                extendedInfoBitmaps = new ArrayList<>();
                 extendedInfoBitmaps = ButtonActions.getExtendedInfoBitmaps();
                 if (ButtonActions.extendedInfoGottenNums()) {
                     ArrayList<Integer> nums = ButtonActions.getVideoDetailsNums();
@@ -115,19 +114,20 @@ public Runnable extendedInfoChecker = new Runnable() {
                 }
 
                 visibilityChanger(false);
-                if (extendedInfoBitmaps.toArray().length > 2) {
-                    System.out.println("Bigger than 2!!!!!!" + extendedInfoBitmaps);
-                }
-                else if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null && currentContent != ButtonActions.getExtendedInfoString()) {
-                    System.out.println(extendedInfoBitmaps);
+                if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null && currentContent == null) {
+                    extendedHandler.postDelayed(extendedInfoChecker, 2000);
+                    new imageGetter().execute(extendedImage.getWidth(), extendedImage.getHeight(), 1);
+                } else if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null && !(currentContent.equals(ButtonActions.getExtendedInfoString()))) {
                     new imageGetter().execute(extendedImage.getWidth(), extendedImage.getHeight(), 1);
                     extendedHandler.postDelayed(extendedInfoChecker, 2000);
-                } else if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(0) != null && currentContent != ButtonActions.getExtendedInfoString()) {
-                    System.out.println(extendedInfoBitmaps);
+                } else if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(0) != null && !(currentContent.equals(ButtonActions.getExtendedInfoString()))) {
                     new imageGetter().execute(extendedImage.getWidth(), extendedImage.getHeight(), 0);
                     extendedHandler.postDelayed(extendedInfoChecker, 2000);
                 } else {
-                    extendedHandler.postDelayed(extendedInfoChecker, 2000);}
+                    extendedHandler.postDelayed(extendedInfoChecker, 2000);
+
+                }
+
 
                 if (elaspedTime == 0) {
                     extendedHandler.post(progressSetter);}

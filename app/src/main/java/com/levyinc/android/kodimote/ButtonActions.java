@@ -1167,6 +1167,62 @@ class ButtonActions {
         Thread thread = new Thread(new RepeatThread());
         thread.start();
     }
+
+    private static class TextInput implements Runnable {
+
+        String text;
+        TextInput (String text) {
+            this.text = text;
+        }
+
+        @Override
+        public void run() {
+            try {
+
+                    JSONObject jsonParam = new JSONObject();
+                    jsonParam.put("jsonrpc", "2.0");
+                    jsonParam.put("method", "Input.SendText");
+                    jsonParam.put("id", 1);
+
+
+                    JSONObject jsonParam2 = new JSONObject();
+                    jsonParam2.put("text", text);
+                    jsonParam2.put("done", false);
+                    jsonParam.put("params", jsonParam2);
+               new URL(request + jsonParam).openStream();
+
+            } catch (IOException | JSONException exception) {
+                exception.printStackTrace();
+            }
+        }
+    }
+
+    static void setText (String text) {
+        Thread thread = new Thread(new TextInput(text));
+        thread.start();
+    }
+
+    private static class GetInfo implements Runnable {
+
+
+        @Override
+        public void run() {
+            try {
+
+                JSONObject jsonParam = new JSONObject();
+                jsonParam.put("jsonrpc", "2.0");
+                jsonParam.put("method", "Input.Info");
+                jsonParam.put("id", 1);
+                new URL(request + jsonParam).openStream();
+            } catch (IOException | JSONException exception) {
+                exception.printStackTrace();
+            }
+        }
+    }
+
+    static void getInfoActino () {
+        new Thread(new GetInfo()).start();
+    }
 }
 
 

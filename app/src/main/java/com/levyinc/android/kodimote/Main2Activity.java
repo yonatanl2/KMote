@@ -10,11 +10,14 @@ import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -56,6 +59,7 @@ public class Main2Activity extends Fragment {
     RelativeLayout remoteLayout;
     SlidingUpPanelLayout slidingUpPanelLayout;
     ImageButton volumeSeek;
+    ImageButton popKeyBoard;
 
     Thread scalingThread = new Thread(new Runnable() {
         @Override
@@ -92,14 +96,18 @@ public class Main2Activity extends Fragment {
             if (sharedPreferences.getString("successful_connection", "").equals("y")) {
                 final ConnectivityManager cm = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
                 NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-                if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
-                    connecting.setVisibility(View.VISIBLE);
-                    ButtonActions.connect(sharedPreferences.getString("input_ip", ""), sharedPreferences.getString("input_port", ""));
-                    if (ButtonActions.getStatus()) {
-                        connecting.setText("Connected");
-                    } else {
-                        remoteHandler.postDelayed(statusChecker, 1000);
+                try {
+                    if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
+                        connecting.setVisibility(View.VISIBLE);
+                        ButtonActions.connect(sharedPreferences.getString("input_ip", ""), sharedPreferences.getString("input_port", ""));
+                        if (ButtonActions.getStatus()) {
+                            connecting.setText("Connected");
+                        } else {
+                            remoteHandler.postDelayed(statusChecker, 1000);
+                        }
                     }
+                } catch (Exception exception) {
+                    exception.printStackTrace();
                 }
             }
         }
@@ -149,9 +157,11 @@ public class Main2Activity extends Fragment {
     };
 
 
+
+
     @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(final LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         myView = inflater.inflate(R.layout.remote_activity, container, false);
         connecting = (TextView) myView.findViewById(R.id.connect_message);
         playPause = (ImageButton) myView.findViewById(R.id.play_pause_button);
@@ -179,6 +189,7 @@ public class Main2Activity extends Fragment {
         setRepeatButton = (ImageButton) myView.findViewById(R.id.set_repeat);
         setShuffleButton = (ImageButton) myView.findViewById(R.id.set_shuffle);
 
+        popKeyBoard = (ImageButton) myView.findViewById(R.id.pop_keyboard);
 
         downArrowDrawer.setVisibility(View.INVISIBLE);
 
@@ -191,6 +202,28 @@ public class Main2Activity extends Fragment {
             }
         });
 
+        ImageButton getInfoButton = (ImageButton) myView.findViewById(R.id.get_info_button);
+        getInfoButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ButtonActions.getInfoActino();
+            }
+        });
+
+        myView.setFocusableInTouchMode(true);
+        myView.requestFocus();
+        myView.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                if (event.getAction() == KeyEvent.ACTION_UP && keyCode == KeyEvent.KEYCODE_BACK) {
+                    if (slidingUpPanelLayout.getPanelState() != SlidingUpPanelLayout.PanelState.COLLAPSED) {
+                        slidingUpPanelLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
         return myView;
     }
 
@@ -221,6 +254,29 @@ public class Main2Activity extends Fragment {
             }
         });
 
+        popKeyBoard.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                LayoutInflater inflater = (LayoutInflater) getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                View layout = inflater.inflate(R.layout.sendtext_layout, (ViewGroup) myView.findViewById(R.id.send_text_layout));
+                AlertDialog.Builder builder = new AlertDialog.Builder(getActivity(), R.style.myAlertDialog);
+                builder.setView(layout);
+                final AlertDialog alertDialog = builder.create();
+                alertDialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+                alertDialog.show();
+
+                Button sendButton = (Button) layout.findViewById(R.id.send_button);
+                final EditText textToSend = (EditText) layout.findViewById(R.id.text_to_send);
+                sendButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        ButtonActions.setText(textToSend.getText().toString());
+                        alertDialog.dismiss();
+                    }
+                });
+            }
+        });
+
         slidingUpPanelLayout.addPanelSlideListener(new SlidingUpPanelLayout.PanelSlideListener() {
             @Override
             public void onPanelSlide(View panel, float slideOffset) {
@@ -239,6 +295,7 @@ public class Main2Activity extends Fragment {
 
             }
         });
+
 
         volumeSeek.setOnClickListener(new View.OnClickListener() {
             @Override

@@ -19,7 +19,7 @@ public class MainActivity extends AppCompatActivity {
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private Toolbar toolbar;
-    final FragmentManager fragmentManager = getSupportFragmentManager();
+    private FragmentManager fragmentManager = getSupportFragmentManager();
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -30,14 +30,24 @@ public class MainActivity extends AppCompatActivity {
             ButtonActions.volumeAction("volumeup");
             return true;
         } else {
+            System.out.println(keyCode + "event" + event + event.getKeyCharacterMap());
+            System.out.println(fragmentManager.findFragmentByTag("nav-main"));
+            /*if (fragmentManager.findFragmentByTag("nav-main") != null) {
+              ButtonActions.setText(event.getDisplayLabel());
+            }*/
             return super.onKeyDown(keyCode, event);
         }
     }
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
-        return true;
-    }
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+            return true;
+        } else if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
+            return true;
+        } else
+            return super.onKeyUp(keyCode, event);
+        }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                fragmentManager.beginTransaction().replace(R.id.content_frame, new SlidingTabActivity()).commitAllowingStateLoss();
+                fragmentManager.beginTransaction().replace(R.id.content_frame, new SlidingTabActivity(), "nav-main").commitAllowingStateLoss();
             }
         }, 5);
         //Setting Navigation View Item Selected Listener to handle the item click of the navigation menu
@@ -66,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
                 //Check to see which item was being clicked and perform appropriate action
                 switch (menuItem.getItemId()) {
                     case R.id.nav_main:
-                        fragmentManager.beginTransaction().replace(R.id.content_frame, new SlidingTabActivity()).commit();
+                        fragmentManager.beginTransaction().replace(R.id.content_frame, new SlidingTabActivity(), "nav-main").commit();
                         new Handler().postDelayed(new Runnable() {
                             @Override
                             public void run() {
@@ -81,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
                         new Handler().postDelayed(new Runnable() {
                             @Override
                             public void run() {
-                                fragmentManager.beginTransaction().replace(R.id.content_frame, new SettingsActivity()).commit();
+                                fragmentManager.beginTransaction().replace(R.id.content_frame, new SettingsActivity(), "settings").commit();
                                 toolbar.setElevation(5);
 
                             }

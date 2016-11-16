@@ -214,6 +214,19 @@
         android:textSize="15sp"
         android:id="@+id/plot_text"/>
 
+        <GridView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:numColumns="4"
+            android:verticalSpacing="10dp"
+            android:horizontalSpacing="10dp"
+            android:stretchMode="columnWidth"
+            android:id="@+id/cast_grid">
+
+
+
+        </GridView>
+
     </RelativeLayout>
 
 </android.support.v4.widget.NestedScrollView>

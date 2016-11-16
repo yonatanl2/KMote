@@ -110,6 +110,7 @@ public class SettingsActivity extends Fragment {
 
 
 
+
         return rootView;
     }
 
@@ -307,4 +308,70 @@ public class SettingsActivity extends Fragment {
             }
         }
     }
+
+   /* public class WebSocketConnector implements Runnable {
+
+        String IP;
+        String port;
+
+        WebSocketConnector (String ip, String port){
+            this.IP = ip;
+            this.port = port;
+        }
+
+        @Override
+        public void run() {
+            try {
+                URI uri = new URI("ws://" + IP":"9090/jsonrpc");
+                WebSocketClient webSocketClient = new WebSocketClient(uri) {
+                    @Override
+                    public void onOpen(ServerHandshake handshakedata) {
+                        System.out.println(handshakedata);
+                    }
+
+                    @Override
+                    public void onMessage(String message) {
+                        System.out.println(message);
+                    }
+
+                    @Override
+                    public void onClose(int code, String reason, boolean remote) {
+                        System.out.println(code + reason);
+                    }
+
+                    @Override
+                    public void onError(Exception ex) {
+                        ex.printStackTrace();
+                    }
+                };
+
+
+                JSONObject jsonParam = new JSONObject();
+                jsonParam.put("jsonrpc", "2.0");
+                jsonParam.put("method", "GUI.ShowNotification");
+                jsonParam.put("id", 1);
+                JSONObject jsonParam2 = new JSONObject();
+                jsonParam2.put("title", "New remote connection");
+                jsonParam2.put("message", "WEBSOCKET");
+                jsonParam.put("params", jsonParam2);
+
+                System.out.println(uri);
+                webSocketClient.connect();
+                webSocketClient.send(jsonParam.toString());
+                webSocketClient.close();
+            }
+
+            catch (Exception exception) {
+                exception.printStackTrace();
+                if (exception.toString().contains("java.net.UnknownHostException") || exception.toString().contains("java.net.ConnectException")) {
+                    Message msg=new Message();
+                    msg.obj="Failed";
+                    connectHandler.sendMessage(msg);
+                    connectHandler.obtainMessage();
+
+                }
+            }
+        }
+    }*/
+
 }

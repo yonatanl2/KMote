@@ -171,20 +171,24 @@ public Runnable extendedInfoChecker = new Runnable() {
     private Runnable connectionChecker = new Runnable() {
         public void run() {
             if (sharedPreferences.getString("successful_connection", "").equals("y") || ButtonActions.getStatus()) {
-                if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
-                    connecting.setVisibility(View.VISIBLE);
-                    connecting.setText("Connecting...");
-                    if (ButtonActions.getStatus()) {
-                        connecting.setText("Connected");
-                        extendedHandler.postDelayed(extendedInfoChecker, 2000);
+                try {
+                    if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
+                        connecting.setVisibility(View.VISIBLE);
+                        connecting.setText("Connecting...");
+                        if (ButtonActions.getStatus()) {
+                            connecting.setText("Connected");
+                            extendedHandler.postDelayed(extendedInfoChecker, 2000);
 
+                        } else {
+                            visibilityChanger(true);
+                            extendedHandler.postDelayed(connectionChecker, 1000);
+                        }
                     } else {
                         visibilityChanger(true);
                         extendedHandler.postDelayed(connectionChecker, 1000);
                     }
-                } else {
-                    visibilityChanger(true);
-                    extendedHandler.postDelayed(connectionChecker, 1000);
+                } catch (Exception exception) {
+                    exception.printStackTrace();
                 }
             }
         }
@@ -223,9 +227,17 @@ public Runnable extendedInfoChecker = new Runnable() {
                 } else {
                     currentProgress.setText(formatter.format(TimeUnit.MILLISECONDS.toHours(elaspedTime)) + ":" + formatter.format(TimeUnit.MILLISECONDS.toMinutes(elaspedTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(elaspedTime))) + ":" + formatter.format(TimeUnit.MILLISECONDS.toSeconds(elaspedTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(elaspedTime))));
                 }
-                lock.unlock();
-                extendedHandler.postDelayed(progressSetter, 1000);
 
+                if (elaspedTime >= ButtonActions.getContentTime()) {
+                    elaspedTime = 0;
+                    visibilityChanger(true);
+
+                }
+
+                lock.unlock();
+                if (!ButtonActions.isPaused()){
+                    extendedHandler.postDelayed(progressSetter, 1000);
+                }
             }
         }
     };
@@ -323,7 +335,8 @@ public Runnable extendedInfoChecker = new Runnable() {
                 if (fromUser){
                     float progressPercentage = (progress * 100.0f) / contentTime;
                     ButtonActions.playerSeek(progressPercentage);
-                    elaspedTime = 1;
+                    elaspedTime = progress;
+                    seekBar.setProgress(progress);
                 }
             }
 
@@ -342,10 +355,6 @@ public Runnable extendedInfoChecker = new Runnable() {
         nestedScrollView.setOnScrollChangeListener(new NestedScrollView.OnScrollChangeListener() {
             @Override
             public void onScrollChange(NestedScrollView v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
-                System.out.println("scroll x: " + scrollX);
-                System.out.println("scroll y: " + scrollY);
-                System.out.println("old - scroll x: " + oldScrollX);
-                System.out.println("old - scroll y: " + oldScrollY);
 
 
                 float scrollYdouble = (float) scrollY;
@@ -455,12 +464,16 @@ public Runnable extendedInfoChecker = new Runnable() {
     public void onPause() {
         super.onPause();
         extendedHandler.removeCallbacks(null);
+        elaspedTime = 0;
+
     }
 
     @Override
     public void onStop() {
         super.onStop();
         extendedHandler.removeCallbacks(null);
+        elaspedTime = 0;
+
     }
 }
 

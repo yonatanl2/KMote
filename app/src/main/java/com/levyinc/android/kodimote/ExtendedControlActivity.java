@@ -51,9 +51,12 @@ public class ExtendedControlActivity extends Fragment {
     TextView totalTime;
     LinearLayout playerActionsLayout;
     View separator;
+    View separator2;
     TextView plotText;
     NetworkInfo activeNetwork;
     NestedScrollView nestedScrollView;
+    ExpandableHeightGridView castGrid;
+    TextView scoreText;
 
 
     private ArrayList<String> currentContent = null;
@@ -75,8 +78,12 @@ public class ExtendedControlActivity extends Fragment {
             seekBar.setVisibility(View.INVISIBLE);
             playerActionsLayout.setVisibility(View.INVISIBLE);
             separator.setVisibility(View.INVISIBLE);
+            separator2.setVisibility(View.INVISIBLE);
             plotText.setVisibility(View.INVISIBLE);
+            scoreText.setVisibility(View.INVISIBLE);
+            castGrid.setVisibility(View.INVISIBLE);
             connecting.setVisibility(View.VISIBLE);
+
         } else {
             contentInfo.setVisibility(View.VISIBLE);
             contentInfoNums.setVisibility(View.VISIBLE);
@@ -88,8 +95,23 @@ public class ExtendedControlActivity extends Fragment {
             seekBar.setVisibility(View.VISIBLE);
             playerActionsLayout.setVisibility(View.VISIBLE);
             separator.setVisibility(View.VISIBLE);
+            separator2.setVisibility(View.VISIBLE);
             plotText.setVisibility(View.VISIBLE);
+            scoreText.setVisibility(View.VISIBLE);
+            castGrid.setVisibility(View.VISIBLE);
             connecting.setVisibility(View.INVISIBLE);
+        }
+    }
+
+    public void castGrid() {
+        if (ButtonActions.getCastArray() != null){
+            castGrid.setExpanded(true);
+            try {
+                castGrid.setAdapter(new CastAdapter(getActivity(), ButtonActions.getCastArray(), R.layout.grid_layout, nestedScrollView.getWidth()));
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+
         }
     }
 
@@ -115,23 +137,24 @@ public Runnable extendedInfoChecker = new Runnable() {
 
                 visibilityChanger(false);
                 if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null && currentContent == null) {
+                    castGrid();
                     extendedHandler.postDelayed(extendedInfoChecker, 2000);
                     new imageGetter().execute(extendedImage.getWidth(), extendedImage.getHeight(), 1);
                 } else if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null && !(currentContent.equals(ButtonActions.getExtendedInfoString()))) {
+                    castGrid();
                     new imageGetter().execute(extendedImage.getWidth(), extendedImage.getHeight(), 1);
                     extendedHandler.postDelayed(extendedInfoChecker, 2000);
                 } else if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(0) != null && !(currentContent.equals(ButtonActions.getExtendedInfoString()))) {
+                    castGrid();
                     new imageGetter().execute(extendedImage.getWidth(), extendedImage.getHeight(), 0);
                     extendedHandler.postDelayed(extendedInfoChecker, 2000);
                 } else {
                     extendedHandler.postDelayed(extendedInfoChecker, 2000);
-
                 }
 
 
                 if (elaspedTime == 0) {
                     extendedHandler.post(progressSetter);}
-
 
                 if (ButtonActions.isPaused() && rootView.findViewById(R.id.play_pause_button_extended).getTag() != "play") {
                     rootView.findViewById(R.id.play_pause_button_extended).setBackgroundResource(R.drawable.play_button);
@@ -143,7 +166,7 @@ public Runnable extendedInfoChecker = new Runnable() {
                 }
 
                 plotText.setText(ButtonActions.getPlot());
-
+                scoreText.setText("Score: " + ButtonActions.getScore());
 
             } else {
                 visibilityChanger(true);
@@ -268,8 +291,12 @@ public Runnable extendedInfoChecker = new Runnable() {
         totalTime = (TextView) rootView.findViewById(R.id.total_time);
         playerActionsLayout = (LinearLayout) rootView.findViewById(R.id.player_actions_layout);
         separator = rootView.findViewById(R.id.extended_separator);
+        separator2 = rootView.findViewById(R.id.extended_separator2);
         plotText = (TextView) rootView.findViewById(R.id.plot_text);
+        scoreText = (TextView) rootView.findViewById(R.id.score_text);
         nestedScrollView = (NestedScrollView) rootView.findViewById(R.id.scrollView_extended);
+        castGrid = (ExpandableHeightGridView) rootView.findViewById(R.id.cast_grid);
+        castGrid.setFocusable(false);
 
 
         sharedPreferences = getActivity().getSharedPreferences("connection_info", Context.MODE_PRIVATE);
@@ -323,6 +350,7 @@ public Runnable extendedInfoChecker = new Runnable() {
         super.onActivityCreated(savedInstanceState);
         ConnectivityManager cm = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
         activeNetwork = cm.getActiveNetworkInfo();
+
     }
 
     @Override
@@ -358,7 +386,7 @@ public Runnable extendedInfoChecker = new Runnable() {
 
 
                 float scrollYdouble = (float) scrollY;
-                extendedImage.setAlpha(1.0f - (scrollYdouble/350));
+                extendedImage.setAlpha(1.0f - (scrollYdouble/550));
 
 
             }

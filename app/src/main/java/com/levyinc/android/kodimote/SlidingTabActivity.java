@@ -74,10 +74,16 @@ public class SlidingTabActivity extends android.support.v4.app.Fragment {
 }
 
 
+    @Override
+    public void onPause() {
+        super.onPause();
+        ButtonActions.stopAsynchTask();
+    }
 
     @Override
     public void onStop() {
         super.onStop();
+        ButtonActions.stopAsynchTask();
     }
 
 }

@@ -94,9 +94,9 @@ public class Main2Activity extends Fragment {
         @Override
         public void run() {
             if (sharedPreferences.getString("successful_connection", "").equals("y")) {
-                final ConnectivityManager cm = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
-                NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
                 try {
+                    ConnectivityManager cm = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+                    NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
                     if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
                         connecting.setVisibility(View.VISIBLE);
                         ButtonActions.connect(sharedPreferences.getString("input_ip", ""), sharedPreferences.getString("input_port", ""));
@@ -105,6 +105,8 @@ public class Main2Activity extends Fragment {
                         } else {
                             remoteHandler.postDelayed(statusChecker, 1000);
                         }
+                    } else {
+                        remoteHandler.postDelayed(statusChecker, 3500);
                     }
                 } catch (Exception exception) {
                     exception.printStackTrace();

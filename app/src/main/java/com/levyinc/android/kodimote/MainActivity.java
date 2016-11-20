@@ -147,6 +147,15 @@ public class MainActivity extends AppCompatActivity {
             case (R.id.reboot):
                 ButtonActions.powerButton("reboot");
                 break;
+            case(R.id.fullscreen):
+                ButtonActions.toggleFullScreen();
+                break;
+            case(R.id.clear_audio):
+                ButtonActions.clearAudioLibrary();
+                break;
+            case(R.id.clear_video):
+                ButtonActions.clearVideoLibrary();
+                break;
         }
 
         return super.onOptionsItemSelected(item);

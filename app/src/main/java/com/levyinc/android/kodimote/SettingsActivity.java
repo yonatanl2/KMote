@@ -12,6 +12,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -54,8 +55,6 @@ public class SettingsActivity extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         rootView = inflater.inflate(R.layout.settings_activity, container, false);
 
-
-
         cm = (ConnectivityManager) getActivity().getSystemService(getActivity().CONNECTIVITY_SERVICE);
         sharedPreferences = getActivity().getSharedPreferences("connection_info", Context.MODE_PRIVATE);
         editor = sharedPreferences.edit();
@@ -95,6 +94,9 @@ public class SettingsActivity extends Fragment {
                 editor.apply();
                 editor.putString("input_port", inputPort.getText().toString());
                 editor.apply();
+
+                Snackbar snackbar = Snackbar.make(view, "hello", Snackbar.LENGTH_INDEFINITE);
+                snackbar.show();
 
                 NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
                 if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {

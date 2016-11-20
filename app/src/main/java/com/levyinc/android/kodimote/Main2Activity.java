@@ -195,7 +195,7 @@ public class Main2Activity extends Fragment {
 
         downArrowDrawer.setVisibility(View.INVISIBLE);
 
-        playPause.setTag("pause");
+        playPause.setTag("");
 
         muteButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -478,6 +478,14 @@ public class Main2Activity extends Fragment {
             }
         });
 
+        select.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                ButtonActions.pressContextMenu();
+                return true;
+            }
+        });
+
 
         stop.setOnClickListener(new View.OnClickListener(){
             @Override
@@ -507,7 +515,7 @@ public class Main2Activity extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        playPause.setTag("pause");
+        playPause.setTag("");
         if (sharedPreferences.getString("successful_connection", "").equals("y")) {
             remoteHandler.post(scalingThread);
             remoteHandler.postDelayed(connectionThread, 100);

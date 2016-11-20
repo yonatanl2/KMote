@@ -719,24 +719,18 @@ class ButtonActions {
                             }
                         }
                     }
+                wait(1500);
                 lock.unlock();
                 Log.println(Log.WARN, "Lock log", "Unlocking");
-            } catch (IOException | JSONException exception) {
+
+                doInBackground();
+            } catch (Exception exception) {
                 exception.printStackTrace();
             }
             return null;
         }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            buttonActionsHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    new AsynchInfoChecker().execute();
-                }
-            }, 1500);
-        }
     }
+
 
     static void stopAsynchTask() {
         infoChecker.cancel(true);
@@ -1274,6 +1268,93 @@ class ButtonActions {
 
     static double getScore() {
         return score;
+    }
+
+    private static class ContextMenuAction implements Runnable {
+
+
+        @Override
+        public void run() {
+            try {
+
+                JSONObject jsonParam = new JSONObject();
+                jsonParam.put("jsonrpc", "2.0");
+                jsonParam.put("method", "Input.ContextMenu");
+                jsonParam.put("id", 1);
+                new URL(request + jsonParam).openStream();
+            } catch (IOException | JSONException exception) {
+                exception.printStackTrace();
+            }
+        }
+    }
+
+    static void pressContextMenu() {
+        new Thread(new ContextMenuAction()).start();
+    }
+
+    private static class ToggleFullScreenAction implements Runnable {
+
+
+        @Override
+        public void run() {
+            try {
+
+                JSONObject jsonParam = new JSONObject();
+                jsonParam.put("jsonrpc", "2.0");
+                jsonParam.put("method", "GUI.SetFullScreen");
+                jsonParam.put("id", 1);
+                new URL(request + jsonParam).openStream();
+            } catch (IOException | JSONException exception) {
+                exception.printStackTrace();
+            }
+        }
+    }
+
+    static void toggleFullScreen() {
+        new Thread(new ToggleFullScreenAction()).start();
+    }
+
+    private static class ClearAudioLibraryAction implements Runnable {
+
+        @Override
+        public void run() {
+            try {
+
+                JSONObject jsonParam = new JSONObject();
+                jsonParam.put("jsonrpc", "2.0");
+                jsonParam.put("method", "AudioLibrary.Clean");
+                jsonParam.put("id", 1);
+                new URL(request + jsonParam).openStream();
+            } catch (IOException | JSONException exception) {
+                exception.printStackTrace();
+            }
+        }
+    }
+
+    private static class ClearVideoLibraryAction implements Runnable {
+
+
+        @Override
+        public void run() {
+            try {
+
+                JSONObject jsonParam = new JSONObject();
+                jsonParam.put("jsonrpc", "2.0");
+                jsonParam.put("method", "VideoLibrary.Clean");
+                jsonParam.put("id", 1);
+                new URL(request + jsonParam).openStream();
+            } catch (IOException | JSONException exception) {
+                exception.printStackTrace();
+            }
+        }
+    }
+
+    static void clearAudioLibrary() {
+        new Thread(new ClearAudioLibraryAction()).start();
+    }
+
+    static void clearVideoLibrary() {
+        new Thread(new ClearVideoLibraryAction()).start();
     }
 
 }

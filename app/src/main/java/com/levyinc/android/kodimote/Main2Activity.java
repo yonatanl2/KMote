@@ -97,16 +97,19 @@ public class Main2Activity extends Fragment {
                 try {
                     ConnectivityManager cm = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
                     NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+                    System.out.println(cm.getActiveNetworkInfo());
                     if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
                         connecting.setVisibility(View.VISIBLE);
                         ButtonActions.connect(sharedPreferences.getString("input_ip", ""), sharedPreferences.getString("input_port", ""));
+                        remoteHandler.postDelayed(intialHandlerSetter, 300);
                         if (ButtonActions.getStatus()) {
                             connecting.setText("Connected");
                         } else {
                             remoteHandler.postDelayed(statusChecker, 1000);
                         }
                     } else {
-                        remoteHandler.postDelayed(statusChecker, 3500);
+                        remoteHandler.postDelayed(connectionThread, 3500);
+                        connecting.setText("Wifi not detected");
                     }
                 } catch (Exception exception) {
                     exception.printStackTrace();
@@ -237,7 +240,6 @@ public class Main2Activity extends Fragment {
         sharedPreferences = getActivity().getSharedPreferences("connection_info", Context.MODE_PRIVATE);
         if (sharedPreferences.getString("successful_connection", "").equals("y")) {
             remoteHandler.postDelayed(connectionThread, 100);
-            remoteHandler.postDelayed(intialHandlerSetter, 300);
             remoteHandler.postDelayed(playCheck, 500);
 
         }
@@ -295,6 +297,14 @@ public class Main2Activity extends Fragment {
             @Override
             public void onPanelStateChanged(View panel, SlidingUpPanelLayout.PanelState previousState, SlidingUpPanelLayout.PanelState newState) {
 
+            }
+        });
+
+        remoteLayout.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                        slidingUpPanelLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
+                return true;
             }
         });
 
@@ -519,7 +529,6 @@ public class Main2Activity extends Fragment {
         if (sharedPreferences.getString("successful_connection", "").equals("y")) {
             remoteHandler.post(scalingThread);
             remoteHandler.postDelayed(connectionThread, 100);
-            remoteHandler.postDelayed(intialHandlerSetter, 300);
             remoteHandler.postDelayed(playCheck, 500);
 
         }

@@ -93,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
                             public void run() {
                                 fragmentManager.beginTransaction().replace(R.id.content_frame, new SettingsActivity(), "settings").commit();
                                 toolbar.setElevation(5);
+                                toolbar.setTitle("Settings");
 
                             }
                         }, 300);

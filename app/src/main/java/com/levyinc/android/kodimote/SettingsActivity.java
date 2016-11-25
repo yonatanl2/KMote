@@ -14,6 +14,7 @@ import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.SwitchCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,6 +23,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.handshake.ServerHandshake;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -32,7 +35,9 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.URI;
 import java.net.URL;
+import java.nio.channels.NotYetConnectedException;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -49,6 +54,7 @@ public class SettingsActivity extends Fragment {
     SharedPreferences.Editor editor;
     StringBuffer jsonString;
     ConnectivityManager cm;
+    WebSocketEndpoint webSocketEndpoint;
 
 
     @Override
@@ -65,6 +71,8 @@ public class SettingsActivity extends Fragment {
         inputIp.setText(sharedPreferences.getString("input_ip", ""));
         inputPort = (EditText) rootView.findViewById(R.id.input_port_edit_text);
         inputPort.setText(sharedPreferences.getString("input_port", ""));
+        final SwitchCompat socketSwitch = (SwitchCompat) rootView.findViewById(R.id.connect_ws_switch);
+
 
         connectHandler = new Handler(Looper.getMainLooper()) {
 
@@ -74,7 +82,7 @@ public class SettingsActivity extends Fragment {
                 SharedPreferences sharedPreferences = getActivity().getSharedPreferences("connection_info", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = sharedPreferences.edit();
                 String mString = (String) msg.obj;
-                Toast.makeText(getContext(), mString, Toast.LENGTH_SHORT).show();
+                Snackbar.make(getView(), mString, Snackbar.LENGTH_SHORT).show();
                 if (mString.equals("Success")) {
                     editor.putString("successful_connection", "y");
                     editor.apply();
@@ -94,18 +102,22 @@ public class SettingsActivity extends Fragment {
                 editor.apply();
                 editor.putString("input_port", inputPort.getText().toString());
                 editor.apply();
-
-                Snackbar snackbar = Snackbar.make(view, "hello", Snackbar.LENGTH_INDEFINITE);
-                snackbar.show();
-
-                NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-                if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
-                    Thread thread = new Thread(new Connecter(sharedPreferences.getString("input_ip", ""), sharedPreferences.getString("input_port", "")));
-                    thread.start();
-                } else {
-                    Toast.makeText(getActivity(), "Wifi connection not detected", Toast.LENGTH_SHORT).show();
-                    editor.putString("successful_connection", "n");
-                    editor.apply();
+                if (socketSwitch.isChecked()) {
+                    webSocketEndpoint = new WebSocketEndpoint(inputIp.getText().toString(), inputPort.getText().toString());
+                } else{
+                    NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+                    try {
+                        if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
+                            Thread thread = new Thread(new HTTPConnector(sharedPreferences.getString("input_ip", ""), sharedPreferences.getString("input_port", "")));
+                            thread.start();
+                        } else {
+                            Toast.makeText(getActivity(), "Wifi connection not detected", Toast.LENGTH_SHORT).show();
+                            editor.putString("successful_connection", "n");
+                            editor.apply();
+                        }
+                    } catch (Exception exception) {
+                        exception.printStackTrace();
+                    }
                 }
             }
         });
@@ -222,8 +234,8 @@ public class SettingsActivity extends Fragment {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        Button tcpButton = (Button) rootView.findViewById(R.id.scan_button);
-        tcpButton.setOnClickListener(new View.OnClickListener() {
+        Button scanButton = (Button) rootView.findViewById(R.id.scan_button);
+        scanButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
@@ -234,20 +246,38 @@ public class SettingsActivity extends Fragment {
                 }
             }
         });
+
+
+      /*  Button connectWS = (Button) rootView.findViewById(R.id.connect_ws_button);
+        connectWS.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                webSocketEndpoint = new WebSocketEndpoint(inputIp.getText().toString(), inputPort.getText().toString());
+            }
+        });*/
+
+        Button random = (Button) rootView.findViewById(R.id.button99);
+        random.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                webSocketEndpoint.sendMessage();
+            }
+        });
     }
 
-    class Connecter implements Runnable {
+    class HTTPConnector implements Runnable {
 
         String IP;
         String port;
 
-        Connecter (String ip, String port){
+        HTTPConnector (String ip, String port){
             this.IP = ip;
             this.port = port;
         }
 
         @Override
         public void run() {
+
             try {
 
                 URL url = new URL("http://" + this.IP + ":" + this.port + "/jsonrpc");
@@ -311,12 +341,13 @@ public class SettingsActivity extends Fragment {
         }
     }
 
-   /* public class WebSocketConnector implements Runnable {
+
+    public class SocketConnector implements Runnable {
 
         String IP;
         String port;
 
-        WebSocketConnector (String ip, String port){
+        SocketConnector(String ip, String port) {
             this.IP = ip;
             this.port = port;
         }
@@ -324,7 +355,8 @@ public class SettingsActivity extends Fragment {
         @Override
         public void run() {
             try {
-                URI uri = new URI("ws://" + IP":"9090/jsonrpc");
+                URI uri = new URI("ws://" + this.IP + ":" + this.port + "/jsonrpc");
+                System.out.println(uri);
                 WebSocketClient webSocketClient = new WebSocketClient(uri) {
                     @Override
                     public void onOpen(ServerHandshake handshakedata) {
@@ -345,35 +377,23 @@ public class SettingsActivity extends Fragment {
                     public void onError(Exception ex) {
                         ex.printStackTrace();
                     }
+
+                    @Override
+                    public void send(String text) throws NotYetConnectedException {
+                        super.send(text);
+                    }
                 };
-
-
-                JSONObject jsonParam = new JSONObject();
-                jsonParam.put("jsonrpc", "2.0");
-                jsonParam.put("method", "GUI.ShowNotification");
-                jsonParam.put("id", 1);
-                JSONObject jsonParam2 = new JSONObject();
-                jsonParam2.put("title", "New remote connection");
-                jsonParam2.put("message", "WEBSOCKET");
-                jsonParam.put("params", jsonParam2);
-
-                System.out.println(uri);
                 webSocketClient.connect();
-                webSocketClient.send(jsonParam.toString());
-                webSocketClient.close();
-            }
-
-            catch (Exception exception) {
+            } catch (Exception exception) {
                 exception.printStackTrace();
                 if (exception.toString().contains("java.net.UnknownHostException") || exception.toString().contains("java.net.ConnectException")) {
-                    Message msg=new Message();
-                    msg.obj="Failed";
+                    Message msg = new Message();
+                    msg.obj = "Failed";
                     connectHandler.sendMessage(msg);
                     connectHandler.obtainMessage();
 
                 }
             }
         }
-    }*/
-
+    }
 }

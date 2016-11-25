@@ -719,13 +719,20 @@ class ButtonActions {
                             }
                         }
                     }
-                wait(1500);
-                lock.unlock();
                 Log.println(Log.WARN, "Lock log", "Unlocking");
+                lock.unlock();
 
-                doInBackground();
             } catch (Exception exception) {
                 exception.printStackTrace();
+            }
+            finally {
+                try {
+                    Thread.sleep(1500);
+                    doInBackground();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
             }
             return null;
         }

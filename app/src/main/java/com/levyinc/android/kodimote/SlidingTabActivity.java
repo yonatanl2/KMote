@@ -57,6 +57,18 @@ public class SlidingTabActivity extends android.support.v4.app.Fragment {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
                 viewPager.setCurrentItem(tab.getPosition());
+                switch (tab.getPosition()) {
+                    case 0:
+                        getActivity().setTitle("Extended Menu");
+                        break;
+                    case 1:
+                        getActivity().setTitle("Remote");
+                        break;
+                    case 2:
+                        getActivity().setTitle("Playlist");
+                        break;
+
+                }
             }
 
             @Override
@@ -70,6 +82,7 @@ public class SlidingTabActivity extends android.support.v4.app.Fragment {
             }
         });
         viewPager.setCurrentItem(1);
+        getActivity().setTitle("Remote");
 
 }
 

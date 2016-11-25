@@ -4,7 +4,8 @@
     <string name="input_port">input_port</string>
     <string name="pi_IP">Kodi IP</string>
     <string name="input_ip">input_ip</string>
-    <string name="connect">Connect</string>
+    <string name="connect">Connect HTTP</string>
+    <string name="connect_WS">Connect\nWebSocket</string>
     <string name="back_button">&#x021B6;</string>
     <string name="title_activity_settings">Settings</string>
     <string name="Connecting">Connecting...</string>

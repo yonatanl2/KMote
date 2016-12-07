@@ -251,6 +251,7 @@
             android:stretchMode="columnWidth"
             android:layout_marginStart="8dp"
             android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
             android:id="@+id/cast_grid">
 
         </com.levyinc.android.kodimote.ExpandableHeightGridView>

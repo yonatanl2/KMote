@@ -9,10 +9,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-/**
- * Created by yonatan on 11/10/16.
- */
-
 public class SlidingTabActivity extends android.support.v4.app.Fragment {
 
     private ViewPager viewPager;

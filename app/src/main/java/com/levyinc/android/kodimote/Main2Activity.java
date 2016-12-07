@@ -27,6 +27,9 @@ import android.widget.TextView;
 
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 
 public class Main2Activity extends Fragment {
     View myView;
@@ -37,6 +40,8 @@ public class Main2Activity extends Fragment {
     boolean rightLongPressed = false;
     boolean paused = false;
     static boolean gotInfo = false;
+
+    Lock lock = new ReentrantLock();
 
     LinearLayout videoLayout;
     TextView connecting;
@@ -93,11 +98,11 @@ public class Main2Activity extends Fragment {
     private Thread connectionThread = new Thread(new Runnable() {
         @Override
         public void run() {
+            lock.lock();
             if (sharedPreferences.getString("successful_connection", "").equals("y")) {
                 try {
                     ConnectivityManager cm = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
                     NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-                    System.out.println(cm.getActiveNetworkInfo());
                     if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
                         connecting.setVisibility(View.VISIBLE);
                         ButtonActions.connect(sharedPreferences.getString("input_ip", ""), sharedPreferences.getString("input_port", ""));
@@ -115,6 +120,7 @@ public class Main2Activity extends Fragment {
                     exception.printStackTrace();
                 }
             }
+            lock.unlock();
         }
     });
 

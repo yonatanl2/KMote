@@ -7,9 +7,9 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
@@ -27,6 +27,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
+
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
@@ -57,13 +58,21 @@ public class ExtendedControlActivity extends Fragment {
     NestedScrollView nestedScrollView;
     ExpandableHeightGridView castGrid;
     TextView scoreText;
-
+    private Bitmap bitmap;
 
     private ArrayList<String> currentContent = null;
     int elaspedTime;
     int contentTime;
-    private Handler extendedHandler = new Handler();
+    private Handler extendedHandler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            if (msg.obj.equals("bitmap")){
+                extendedImage.setImageBitmap(bitmap);
+            }
+        }
+    };
     private Lock lock = new ReentrantLock();
+    private boolean progressRunner;
 
 
     public void visibilityChanger(boolean setVisible) {
@@ -119,77 +128,95 @@ public class ExtendedControlActivity extends Fragment {
 public Runnable extendedInfoChecker = new Runnable() {
     @Override
     public void run() {
-        if (ButtonActions.getStatus()) {
-            if (ButtonActions.playerInfoGotten()) {
-                extendedInfoBitmaps = ButtonActions.getExtendedInfoBitmaps();
-                if (ButtonActions.extendedInfoGottenNums()) {
-                    ArrayList<Integer> nums = ButtonActions.getVideoDetailsNums();
-                    contentInfoNums.setText("Season: " + nums.get(0) + "\n" + "Episode: " + nums.get(1));
-                }
+        try {
+            if (ButtonActions.getStatus()) {
+                if (ButtonActions.playerInfoGotten()) {
+                    extendedInfoBitmaps = ButtonActions.getExtendedInfoBitmaps();
+                    if (ButtonActions.extendedInfoGottenNums()) {
+                        ArrayList<Integer> nums = ButtonActions.getVideoDetailsNums();
+                        contentInfoNums.setText("Season: " + nums.get(0) + "\n" + "Episode: " + nums.get(1));
+                    }
 
 
-                ArrayList<String> tempArrayList = ButtonActions.getExtendedInfoString();
-                if (tempArrayList.toArray().length > 1) {
-                    contentInfo.setText(tempArrayList.get(0)+ ": " + tempArrayList.get(1));
+                    ArrayList<String> tempArrayList = ButtonActions.getExtendedInfoString();
+                    if (tempArrayList.toArray().length > 1) {
+                        contentInfo.setText(tempArrayList.get(0) + ": " + tempArrayList.get(1));
+                    } else {
+                        contentInfo.setText(tempArrayList.get(1));
+                    }
+
+                    visibilityChanger(false);
+                    if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null && currentContent == null) {
+                        castGrid();
+                        extendedHandler.postDelayed(extendedInfoChecker, 2000);
+                        new Thread(new ImageGetter(extendedImage.getWidth(), extendedImage.getHeight(), 1)).start();
+                    } else if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null && !(currentContent.equals(ButtonActions.getExtendedInfoString()))) {
+                        castGrid();
+                        new Thread(new ImageGetter(extendedImage.getWidth(), extendedImage.getHeight(), 1)).start();
+                        extendedHandler.postDelayed(extendedInfoChecker, 2000);
+                    } else if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(0) != null && !(currentContent.equals(ButtonActions.getExtendedInfoString()))) {
+                        castGrid();
+                        new Thread(new ImageGetter(extendedImage.getWidth(), extendedImage.getHeight(), 0)).start();
+                        extendedHandler.postDelayed(extendedInfoChecker, 2000);
+                    } else {
+                        extendedHandler.postDelayed(extendedInfoChecker, 2000);
+                    }
+
+
+                    if (elaspedTime == 0 || !progressRunner) {
+                        extendedHandler.post(progressSetter);
+                    } else if (currentContent != ButtonActions.getExtendedInfoString() && !ButtonActions.isPaused())
+
+                    if (ButtonActions.isPaused() && rootView.findViewById(R.id.play_pause_button_extended).getTag() != "play") {
+                        rootView.findViewById(R.id.play_pause_button_extended).setBackgroundResource(R.drawable.play_button);
+                        rootView.findViewById(R.id.play_pause_button_extended).setTag("play");
+
+                    } else if (!(ButtonActions.isPaused()) && rootView.findViewById(R.id.play_pause_button_extended).getTag() != "pause") {
+                        rootView.findViewById(R.id.play_pause_button_extended).setBackgroundResource(R.drawable.pause_button);
+                        rootView.findViewById(R.id.play_pause_button_extended).setTag("pause");
+                    }
+
+                    plotText.setText(ButtonActions.getPlot());
+                    scoreText.setText("Score: " + ButtonActions.getScore());
+
                 } else {
-                    contentInfo.setText(tempArrayList.get(1));
+                    visibilityChanger(true);
+                    extendedHandler.postDelayed(extendedInfoChecker, 2500);
                 }
-
-                visibilityChanger(false);
-                if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null && currentContent == null) {
-                    castGrid();
-                    extendedHandler.postDelayed(extendedInfoChecker, 2000);
-                    new imageGetter().execute(extendedImage.getWidth(), extendedImage.getHeight(), 1);
-                } else if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null && !(currentContent.equals(ButtonActions.getExtendedInfoString()))) {
-                    castGrid();
-                    new imageGetter().execute(extendedImage.getWidth(), extendedImage.getHeight(), 1);
-                    extendedHandler.postDelayed(extendedInfoChecker, 2000);
-                } else if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(0) != null && !(currentContent.equals(ButtonActions.getExtendedInfoString()))) {
-                    castGrid();
-                    new imageGetter().execute(extendedImage.getWidth(), extendedImage.getHeight(), 0);
-                    extendedHandler.postDelayed(extendedInfoChecker, 2000);
-                } else {
-                    extendedHandler.postDelayed(extendedInfoChecker, 2000);
-                }
-
-
-                if (elaspedTime == 0) {
-                    extendedHandler.post(progressSetter);}
-
-                if (ButtonActions.isPaused() && rootView.findViewById(R.id.play_pause_button_extended).getTag() != "play") {
-                    rootView.findViewById(R.id.play_pause_button_extended).setBackgroundResource(R.drawable.play_button);
-                    rootView.findViewById(R.id.play_pause_button_extended).setTag("play");
-
-                } else if (!(ButtonActions.isPaused()) && rootView.findViewById(R.id.play_pause_button_extended).getTag() != "pause") {
-                    rootView.findViewById(R.id.play_pause_button_extended).setBackgroundResource(R.drawable.pause_button);
-                    rootView.findViewById(R.id.play_pause_button_extended).setTag("pause");
-                }
-
-                plotText.setText(ButtonActions.getPlot());
-                scoreText.setText("Score: " + ButtonActions.getScore());
-
             } else {
                 visibilityChanger(true);
-                extendedHandler.postDelayed(extendedInfoChecker, 2500);}
-        } else {
-            visibilityChanger(true);
-            extendedHandler.postDelayed(connectionChecker, 3500);}
+                extendedHandler.postDelayed(connectionChecker, 3500);
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+            if (exception.toString() != null) {
+                extendedHandler.postDelayed(connectionChecker, 3500);
+            }
+        }
     }
 };
 
-    public class imageGetter extends AsyncTask<Integer, Void, Bitmap> {
+    private class ImageGetter implements Runnable {
 
-        @Override
-        protected Bitmap doInBackground(Integer... params) {
-            return Bitmap.createScaledBitmap(extendedInfoBitmaps.get(params[2]), params[0] , params[1] , true);
+        int index;
+        int width;
+        int height;
+
+        ImageGetter (int width, int height, int index) {
+            this.index = index;
+            this.width = width;
+            this.height = height;
         }
-
         @Override
-        protected void onPostExecute(Bitmap bitmap) {
-            extendedImage.setImageBitmap(bitmap);
+        public void run() {
             currentContent = ButtonActions.getExtendedInfoString();
+            bitmap = Bitmap.createScaledBitmap(extendedInfoBitmaps.get(index), width , height , true);
+            Message msg = new Message();
+            msg.obj = "bitmap";
+            extendedHandler.sendMessage(msg);
+            extendedHandler.obtainMessage();
         }
-    }
+    };
 
     private Runnable connectionChecker = new Runnable() {
         public void run() {
@@ -218,10 +245,10 @@ public Runnable extendedInfoChecker = new Runnable() {
     };
 
     private Runnable progressSetter = new Runnable() {
-
         @Override
         public void run() {
             lock.lock();
+            progressRunner = true;
             DecimalFormat formatter = new DecimalFormat("00");
             if (ButtonActions.getContentTime() != null) {
                 if (ButtonActions.getContentTime() > 0) {
@@ -254,16 +281,22 @@ public Runnable extendedInfoChecker = new Runnable() {
                 if (elaspedTime >= ButtonActions.getContentTime()) {
                     elaspedTime = 0;
                     visibilityChanger(true);
-
                 }
 
                 lock.unlock();
-                if (!ButtonActions.isPaused()){
+                if (ButtonActions.isPaused() || !ButtonActions.playerInfoGotten() || !progressRunner){
+                    System.out.println("Button Actions: " + ButtonActions.isPaused());
+                    System.out.println("Player Info: " + ButtonActions.playerInfoGotten());
+                    System.out.println("Progress Runner: " + progressRunner);
+                    progressRunner = false;
+                } else {
                     extendedHandler.postDelayed(progressSetter, 1000);
                 }
             }
         }
     };
+
+
 
 
     Thread scalingThread = new Thread(new Runnable() {
@@ -299,6 +332,7 @@ public Runnable extendedInfoChecker = new Runnable() {
         castGrid.setFocusable(false);
 
 
+
         sharedPreferences = getActivity().getSharedPreferences("connection_info", Context.MODE_PRIVATE);
 
         extendedHandler.post(scalingThread);
@@ -314,6 +348,9 @@ public Runnable extendedInfoChecker = new Runnable() {
         playPause.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view){
+                if (ButtonActions.isPaused() && !progressRunner){
+                    extendedHandler.postDelayed(progressSetter, 300);
+                }
                 ButtonActions.playPause();
             }
         });
@@ -398,12 +435,12 @@ public Runnable extendedInfoChecker = new Runnable() {
                 PopupMenu popupMenu = new PopupMenu(getActivity(), v);
                 MenuInflater menuInflater = popupMenu.getMenuInflater();
                 menuInflater.inflate(R.menu.extended_menu, popupMenu.getMenu());
-                final ViewPager viewPager = (ViewPager) getActivity().findViewById(R.id.remote_page_viewer);
 
                 popupMenu.show();
                 popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                     @Override
                     public boolean onMenuItemClick(MenuItem item) {
+                        final ViewPager viewPager = (ViewPager) getActivity().findViewById(R.id.remote_page_viewer);
                         switch (item.toString()){
                             case ("Subtitles"):
                                 final ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), R.layout.list_view, ButtonActions.getSubtitleInfo());
@@ -470,7 +507,6 @@ public Runnable extendedInfoChecker = new Runnable() {
                                             }
                                     });
                                 }
-                                System.out.println(adapter2.getCount());
                                 builder2.show();
                                 break;
                         }
@@ -492,14 +528,17 @@ public Runnable extendedInfoChecker = new Runnable() {
     public void onPause() {
         super.onPause();
         extendedHandler.removeCallbacks(null);
+        progressRunner = false;
         elaspedTime = 0;
-
     }
+
+
 
     @Override
     public void onStop() {
         super.onStop();
         extendedHandler.removeCallbacks(null);
+        progressRunner = false;
         elaspedTime = 0;
 
     }

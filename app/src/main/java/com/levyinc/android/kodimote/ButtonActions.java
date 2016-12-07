@@ -380,15 +380,15 @@ class ButtonActions {
 
     private static class AsynchInfoChecker extends AsyncTask<Void, Void, Void> {
 
-        StringBuffer jsonString;
-
         @Override
         protected Void doInBackground(Void... params) {
             Calendar cal = Calendar.getInstance();
-            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-            Log.println(Log.WARN, "log time", sdf.format(cal.getTime()));
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",
+                    java.util.Locale.getDefault());
+
+            Log.i("Info Checker", format.format(cal.getTime()));
             lock.lock();
-            Log.println(Log.WARN, "Lock log", "Locking");
+            Log.i("Info Checker", "Locking");
             try {
                 JSONObject jsonParam = new JSONObject();
                 jsonParam.put("jsonrpc", "2.0");
@@ -398,7 +398,7 @@ class ButtonActions {
                 InputStream inputStream = new URL(request + jsonParam).openStream();
 
                 BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
-                jsonString = new StringBuffer();
+                StringBuffer jsonString = new StringBuffer();
                 String line;
                 while ((line = br.readLine()) != null) {
                     jsonString.append(line);
@@ -719,7 +719,7 @@ class ButtonActions {
                             }
                         }
                     }
-                Log.println(Log.WARN, "Lock log", "Unlocking");
+                Log.i("Info Checker", "Unlocking");
                 lock.unlock();
 
             } catch (Exception exception) {
@@ -732,9 +732,13 @@ class ButtonActions {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-
             }
             return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+
         }
     }
 
@@ -751,6 +755,11 @@ class ButtonActions {
                     exception.printStackTrace();
                     System.out.println(infoChecker.getStatus());
                 }
+            } else if (infoChecker.getStatus() == AsyncTask.Status.FINISHED) {
+                infoChecker = new AsynchInfoChecker();
+                infoChecker.execute();
+            } else {
+                System.out.println("Info Checker didn't intiallize: " + infoChecker.getStatus());
             }
         }
 

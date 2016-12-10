@@ -103,9 +103,9 @@ public class Main2Activity extends Fragment {
                     ConnectivityManager cm = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
                     NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
                     if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
+                        connecting.setVisibility(View.VISIBLE);
                         if (!sharedPreferences.getString("WS", "").equals("y")) {
                             wsActive = false;
-                            connecting.setVisibility(View.VISIBLE);
                             ButtonActions.connect(sharedPreferences.getString("input_ip", ""), sharedPreferences.getString("input_port", ""));
                             remoteHandler.postDelayed(intialHandlerSetter, 300);
                             if (ButtonActions.getStatus()) {
@@ -114,8 +114,18 @@ public class Main2Activity extends Fragment {
                                 remoteHandler.postDelayed(statusChecker, 1000);
                             }
                         } else {
-                            webSocketEndpoint = new WebSocketEndpoint(sharedPreferences.getString("input_ip", ""), sharedPreferences.getString("input_port", ""));
-                            wsActive = true;
+                            if (wsActive) {
+                                connecting.setText("Connected");
+                            } else {
+                                webSocketEndpoint = new WebSocketEndpoint(sharedPreferences.getString("input_ip", ""), sharedPreferences.getString("input_port", ""));
+                                if (webSocketEndpoint.getOnOpenMessage() != null) {
+                                    wsActive = true;
+                                    connecting.setText("Connected");
+
+                                } else {
+                                    remoteHandler.postDelayed(connectionThread, 3500);
+                                }
+                            }
                         }
                     } else {
                         remoteHandler.postDelayed(connectionThread, 3500);

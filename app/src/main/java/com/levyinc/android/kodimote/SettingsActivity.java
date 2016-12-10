@@ -3,6 +3,7 @@ package com.levyinc.android.kodimote;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -71,7 +72,12 @@ public class SettingsActivity extends Fragment {
             socketSwitch.setChecked(true);
         }
 
-
+        socketDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+            @Override
+            public void onCancel(DialogInterface dialogInterface) {
+                connectHandler.removeCallbacksAndMessages(socketRunnable);
+            }
+        });
         connectHandler = new Handler(Looper.getMainLooper()) {
 
             @Override
@@ -107,6 +113,7 @@ public class SettingsActivity extends Fragment {
                     Calendar cal = Calendar.getInstance();
                     connectTime = cal.getTimeInMillis();
                     webSocketEndpoint = new WebSocketEndpoint(inputIp.getText().toString(), inputPort.getText().toString());
+                    response = false;
                     socketRunnable.run();
 
                 } else{
@@ -136,40 +143,57 @@ public class SettingsActivity extends Fragment {
     Runnable socketRunnable = new Runnable() {
         @Override
         public void run() {
-            if (!response) {
-                if (webSocketEndpoint.getOnOpenMessage() != null) {
-                    Snackbar.make(getView(), "Success", Snackbar.LENGTH_SHORT).show();
-                    response = true;
-                } else if (webSocketEndpoint.getOnOpenMessage() != null) {
-                    if (webSocketEndpoint.getCloseMessage().equals("No route to host")) {
+            try {
+                if (!response) {
+                    if (webSocketEndpoint.getOnOpenMessage() != null) {
+                        Snackbar.make(getView(), "Success", Snackbar.LENGTH_SHORT).show();
+                        sharedPreferences.edit().putString("WS", "y").apply();
+                        response = true;
+                        socketDialog.dismiss();
+                    } else if (webSocketEndpoint.getCloseMessage() != null) {
+                        if (webSocketEndpoint.getCloseMessage().equals("No route to host")) {
+                            Snackbar.make(getView(), "Failed", Snackbar.LENGTH_SHORT).show();
+                            sharedPreferences.edit().putString("WS", "n").apply();
+                        }
+                        response = true;
+                        socketDialog.dismiss();
+                    } else if (connectTime + 10000 < Calendar.getInstance().getTimeInMillis()) {
+                        socketDialog.dismiss();
+                        sharedPreferences.edit().putString("WS", "n").apply();
+                        response = true;
                         Snackbar.make(getView(), "Failed", Snackbar.LENGTH_SHORT).show();
+                    } else {
+                        connectHandler.postDelayed(socketRunnable, 300);
                     }
-                    response = true;
-                } else if (connectTime + 10000 < Calendar.getInstance().getTimeInMillis()) {
-                    socketDialog.dismiss();
-                    sharedPreferences.edit().putString("WS", "n").apply();
-                    response = true;
-                    Snackbar.make(getView(), "Failed", Snackbar.LENGTH_SHORT).show();
                 } else {
-                    connectHandler.postDelayed(socketRunnable, 300);
+                    socketDialog.dismiss();
+                    sharedPreferences.edit().putString("WS", "y").apply();
                 }
-            } else {
-                socketDialog.dismiss();
-                sharedPreferences.edit().putString("WS", "y").apply();
+            } catch (Exception exception) {
+                exception.printStackTrace();
             }
         }
     };
 
     public class AsyncScan extends AsyncTask <Void, Void, Boolean> {
 
-        ProgressDialog progressDialog = new ProgressDialog(getContext(), R.style.newDialog);
-
         View currentView;
+        ProgressDialog progressDialog;
 
-        AsyncScan (View view){
+
+        AsyncScan (View view, Context context){
             this.currentView = view;
+            progressDialog = new ProgressDialog(context, R.style.newDialog);
+            progressDialog.setTitle("Scanning");
+            progressDialog.setMessage("Wait while KodiMote is scanning for available devices...");
+            progressDialog.setCancelable(true); // disable dismiss by tapping outside of the dialog
+            progressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+                @Override
+                public void onCancel(DialogInterface dialogInterface) {
+                    cancel(true);
+                }
+            });
         }
-
 
         @Override
         protected Boolean doInBackground(Void... params) {
@@ -193,11 +217,15 @@ public class SettingsActivity extends Fragment {
                 if (ipMatcher.find()) {
                     tempString = ipMatcher.replaceAll("");
                     for (int i = 0; i < 30; i++) {
+                        if (isCancelled()){
+                            break;
+                        }
                         try {
                             URL url = new URL("http://" + (tempString + "." + i) + ":8080/jsonrpc");
                             System.out.println("attempting: " + url);
                             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                             conn.setDoOutput(true);
+                            conn.setConnectTimeout(1500);
                             conn.setRequestMethod("POST");
                             conn.setRequestProperty("Content-Type", "application/json");
                             JSONObject jsonParam = new JSONObject();
@@ -250,9 +278,7 @@ public class SettingsActivity extends Fragment {
 
         @Override
         protected void onPreExecute() {
-            progressDialog.setTitle("Scanning");
-            progressDialog.setMessage("Wait while KodiMote is scanning for available devices...");
-            progressDialog.setCancelable(true); // disable dismiss by tapping outside of the dialog
+
             progressDialog.show();
         }
 
@@ -277,7 +303,7 @@ public class SettingsActivity extends Fragment {
             public void onClick(View v) {
                 NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
                 if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
-                    new AsyncScan(v).execute();
+                    new AsyncScan(v, getContext()).execute();
                 } else {
                     Snackbar.make(v, "No WIFI connnection detected", Snackbar.LENGTH_SHORT).show();
                 }

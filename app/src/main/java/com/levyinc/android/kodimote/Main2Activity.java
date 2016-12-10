@@ -39,10 +39,11 @@ public class Main2Activity extends Fragment {
     boolean leftLongPressed = false;
     boolean rightLongPressed = false;
     boolean paused = false;
-    static boolean gotInfo = false;
+    static private boolean wsActive;
 
     Lock lock = new ReentrantLock();
 
+    static WebSocketEndpoint webSocketEndpoint;
     LinearLayout videoLayout;
     TextView connecting;
     SharedPreferences sharedPreferences;
@@ -66,11 +67,10 @@ public class Main2Activity extends Fragment {
     ImageButton volumeSeek;
     ImageButton popKeyBoard;
 
+
     Thread scalingThread = new Thread(new Runnable() {
         @Override
         public void run() {
-
-
             select.setBackgroundResource(R.drawable.centerround);
             buttonUp.setBackgroundResource(R.drawable.arrowup);
             buttonDown.setBackgroundResource(R.drawable.arrowdown);
@@ -80,7 +80,6 @@ public class Main2Activity extends Fragment {
             playPause.setBackgroundResource(R.drawable.pause_button);
             rollBack.setBackgroundResource(R.drawable.roll_back);
             fastForward.setBackgroundResource(R.drawable.roll_forward);
-
         }
     });
 
@@ -104,13 +103,19 @@ public class Main2Activity extends Fragment {
                     ConnectivityManager cm = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
                     NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
                     if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
-                        connecting.setVisibility(View.VISIBLE);
-                        ButtonActions.connect(sharedPreferences.getString("input_ip", ""), sharedPreferences.getString("input_port", ""));
-                        remoteHandler.postDelayed(intialHandlerSetter, 300);
-                        if (ButtonActions.getStatus()) {
-                            connecting.setText("Connected");
+                        if (!sharedPreferences.getString("WS", "").equals("y")) {
+                            wsActive = false;
+                            connecting.setVisibility(View.VISIBLE);
+                            ButtonActions.connect(sharedPreferences.getString("input_ip", ""), sharedPreferences.getString("input_port", ""));
+                            remoteHandler.postDelayed(intialHandlerSetter, 300);
+                            if (ButtonActions.getStatus()) {
+                                connecting.setText("Connected");
+                            } else {
+                                remoteHandler.postDelayed(statusChecker, 1000);
+                            }
                         } else {
-                            remoteHandler.postDelayed(statusChecker, 1000);
+                            webSocketEndpoint = new WebSocketEndpoint(sharedPreferences.getString("input_ip", ""), sharedPreferences.getString("input_port", ""));
+                            wsActive = true;
                         }
                     } else {
                         remoteHandler.postDelayed(connectionThread, 3500);
@@ -124,12 +129,11 @@ public class Main2Activity extends Fragment {
         }
     });
 
-
-
     private Thread playCheck = new Thread(new Runnable() {
             @Override
             public void run () {
-                if (ButtonActions.playerInfoGotten()) {
+                if (!wsActive) {
+                    if (ButtonActions.playerInfoGotten()) {
                         videoLayout.setVisibility(View.VISIBLE);
                         connecting.setVisibility(View.INVISIBLE);
                         if (ButtonActions.isPaused() && playPause.getTag() != "play") {
@@ -142,10 +146,11 @@ public class Main2Activity extends Fragment {
                             paused = false;
                         }
                     } else {
-                    videoLayout.setVisibility(View.INVISIBLE);
-                    connecting.setVisibility(View.VISIBLE);
+                        videoLayout.setVisibility(View.INVISIBLE);
+                        connecting.setVisibility(View.VISIBLE);
                     }
-                remoteHandler.postDelayed(playCheck, 4000);
+                    remoteHandler.postDelayed(playCheck, 4000);
+                }
             }
         });
 
@@ -190,6 +195,7 @@ public class Main2Activity extends Fragment {
         connecting.setVisibility(View.INVISIBLE);
 
         ImageButton muteButton = (ImageButton) myView.findViewById(R.id.mute_button);
+        ImageButton getInfoButton = (ImageButton) myView.findViewById(R.id.get_info_button);
         homeButton = (ImageButton) myView.findViewById(R.id.home_button);
         upArrowDrawer = (ImageView) myView.findViewById(R.id.drawer_arrow);
         downArrowDrawer = (ImageView) myView.findViewById(R.id.drawer_arrow_down);
@@ -199,11 +205,9 @@ public class Main2Activity extends Fragment {
         volumeSeek = (ImageButton) myView.findViewById(R.id.set_volume);
         setRepeatButton = (ImageButton) myView.findViewById(R.id.set_repeat);
         setShuffleButton = (ImageButton) myView.findViewById(R.id.set_shuffle);
-
         popKeyBoard = (ImageButton) myView.findViewById(R.id.pop_keyboard);
 
         downArrowDrawer.setVisibility(View.INVISIBLE);
-
         playPause.setTag("");
 
         muteButton.setOnClickListener(new View.OnClickListener() {
@@ -213,7 +217,6 @@ public class Main2Activity extends Fragment {
             }
         });
 
-        ImageButton getInfoButton = (ImageButton) myView.findViewById(R.id.get_info_button);
         getInfoButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -247,7 +250,6 @@ public class Main2Activity extends Fragment {
         if (sharedPreferences.getString("successful_connection", "").equals("y")) {
             remoteHandler.postDelayed(connectionThread, 100);
             remoteHandler.postDelayed(playCheck, 500);
-
         }
 
         setRepeatButton.setOnClickListener(new View.OnClickListener() {
@@ -354,14 +356,22 @@ public class Main2Activity extends Fragment {
         back.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view){
-                ButtonActions.back();
+                if (!wsActive) {
+                    ButtonActions.back();
+                } else {
+                    webSocketEndpoint.back();
+                }
             }
         });
 
         select.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view){
-                ButtonActions.select();
+                if (!wsActive) {
+                    ButtonActions.select();
+                } else {
+                    webSocketEndpoint.select();
+                }
 
             }
         });
@@ -371,10 +381,18 @@ public class Main2Activity extends Fragment {
             @Override
             public void run() {
                 if (upLongPressed) {
-                    ButtonActions.up();
+                    if (!wsActive) {
+                        ButtonActions.up();
+                    } else {
+                        webSocketEndpoint.up();
+                    }
                     remoteHandler.postDelayed(new RepetitiveActions(), 50);
                 } else if (downLongPressed) {
-                    ButtonActions.down();
+                    if (!wsActive) {
+                        ButtonActions.down();
+                    } else {
+                        webSocketEndpoint.down();
+                    }
                     remoteHandler.postDelayed(new RepetitiveActions(), 50);
                 }
             }
@@ -383,7 +401,11 @@ public class Main2Activity extends Fragment {
         buttonUp.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                ButtonActions.up();
+                if (!wsActive) {
+                    ButtonActions.up();
+                } else {
+                    webSocketEndpoint.up();
+                }
             }
         });
 
@@ -408,7 +430,11 @@ public class Main2Activity extends Fragment {
         buttonDown.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                ButtonActions.down();
+                if (!wsActive) {
+                    ButtonActions.down();
+                } else {
+                    webSocketEndpoint.down();
+                }
             }
         });
         buttonDown.setOnLongClickListener(new View.OnLongClickListener() {
@@ -432,7 +458,11 @@ public class Main2Activity extends Fragment {
         buttonLeft.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                ButtonActions.left();
+                if (!wsActive) {
+                    ButtonActions.left();
+                } else {
+                    webSocketEndpoint.left();
+                }
             }
         });
         buttonLeft.setOnLongClickListener(new View.OnLongClickListener() {
@@ -456,7 +486,11 @@ public class Main2Activity extends Fragment {
         buttonRight.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                ButtonActions.right();
+                if (!wsActive) {
+                    ButtonActions.right();
+                } else {
+                    webSocketEndpoint.right();
+                }
             }
         });
         buttonRight.setOnLongClickListener(new View.OnLongClickListener() {
@@ -490,7 +524,11 @@ public class Main2Activity extends Fragment {
         homeButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ButtonActions.homeButton();
+                if (!wsActive) {
+                    ButtonActions.homeButton();
+                } else {
+                    webSocketEndpoint.home();
+                }
             }
         });
 
@@ -544,25 +582,38 @@ public class Main2Activity extends Fragment {
     @Override
     public void onPause() {
         super.onPause();
-        ButtonActions.disconnect();
-        ButtonActions.buttonActionsHandler.removeCallbacksAndMessages(null);
+        if (wsActive){
+            webSocketEndpoint.disconnect();
+        }
         remoteHandler.removeCallbacksAndMessages(null);
+        ButtonActions.stopAsynchTask();
+
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
-        ButtonActions.disconnect();
-        ButtonActions.buttonActionsHandler.removeCallbacksAndMessages(null);
+        if (wsActive){
+            webSocketEndpoint.disconnect();
+        }
         remoteHandler.removeCallbacksAndMessages(null);
+        ButtonActions.stopAsynchTask();
+
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        ButtonActions.disconnect();
-        ButtonActions.buttonActionsHandler.removeCallbacksAndMessages(null);
+        if (wsActive){
+            webSocketEndpoint.disconnect();
+        }
         remoteHandler.removeCallbacksAndMessages(null);
+        ButtonActions.stopAsynchTask();
+
+    }
+
+    static boolean getWebSocketStatus() {
+        return wsActive;
     }
 }
 

@@ -16,7 +16,8 @@ public class SlidingTabActivity extends android.support.v4.app.Fragment {
 
     FragmentAdapterClass fragmentPagerAdapter;
 
-    View rootView;
+
+        View rootView;
 
 
     @Nullable

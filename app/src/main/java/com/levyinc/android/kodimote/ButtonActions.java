@@ -3,9 +3,6 @@ package com.levyinc.android.kodimote;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
 import android.util.Log;
 
 import org.json.JSONException;
@@ -41,7 +38,6 @@ class ButtonActions {
     private static ArrayList<ArrayList<String>> subtitleInfo = new ArrayList<>();
     private static ArrayList<ArrayList<String>> audioStreamInfo = new ArrayList<>();
     private static ArrayList<String> castArray = new ArrayList<>();
-    private static String videoDetails;
     private static Long contentTime;
     private static Long elaspedTime;
     private static String episodeName;
@@ -53,16 +49,7 @@ class ButtonActions {
     private static boolean isShuffled;
     private static boolean isRepeat;
     private static double score;
-
     private static AsynchInfoChecker infoChecker = new AsynchInfoChecker();
-
-    public static Handler buttonActionsHandler = new Handler(Looper.getMainLooper()){
-        @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-            System.out.println(msg.obj);
-        }
-    };
     private static Lock lock = new ReentrantLock();
 
     static boolean getStatus() {
@@ -93,17 +80,6 @@ class ButtonActions {
         request = "http://" + piIp + ":" + piPort + "/jsonrpc?request=";
         new AsynchConnect().execute();
     }
-
-    static void disconnect() {
-        try {
-            URL url = new URL(request);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.disconnect();
-        } catch (IOException exception) {
-            System.out.println(exception.toString());
-        }
-    }
-
 
     private static class AsynchFastForward implements Runnable {
         @Override
@@ -792,10 +768,6 @@ class ButtonActions {
                 exception.printStackTrace();
             }
         }
-    }
-
-    static boolean extendedInfoGotten() {
-        return (bitmapArrayList.toArray().length > 0);
     }
 
     static boolean extendedInfoGottenNums() {

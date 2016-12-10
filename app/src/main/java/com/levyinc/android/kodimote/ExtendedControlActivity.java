@@ -1,6 +1,7 @@
 package com.levyinc.android.kodimote;
 
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
@@ -58,21 +59,14 @@ public class ExtendedControlActivity extends Fragment {
     NestedScrollView nestedScrollView;
     ExpandableHeightGridView castGrid;
     TextView scoreText;
-    private Bitmap bitmap;
 
     private ArrayList<String> currentContent = null;
     int elaspedTime;
     int contentTime;
-    private Handler extendedHandler = new Handler(){
-        @Override
-        public void handleMessage(Message msg) {
-            if (msg.obj.equals("bitmap")){
-                extendedImage.setImageBitmap(bitmap);
-            }
-        }
-    };
+    static private Handler extendedHandler = new Handler();
     private Lock lock = new ReentrantLock();
     private boolean progressRunner;
+
 
 
     public void visibilityChanger(boolean setVisible) {
@@ -149,14 +143,14 @@ public Runnable extendedInfoChecker = new Runnable() {
                     if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null && currentContent == null) {
                         castGrid();
                         extendedHandler.postDelayed(extendedInfoChecker, 2000);
-                        new Thread(new ImageGetter(extendedImage.getWidth(), extendedImage.getHeight(), 1)).start();
+                        new Thread(new ImageGetter(extendedImage.getWidth(), extendedImage.getHeight(), 1, getActivity())).start();
                     } else if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(1) != null && !(currentContent.equals(ButtonActions.getExtendedInfoString()))) {
                         castGrid();
-                        new Thread(new ImageGetter(extendedImage.getWidth(), extendedImage.getHeight(), 1)).start();
+                        new Thread(new ImageGetter(extendedImage.getWidth(), extendedImage.getHeight(), 1, getActivity())).start();
                         extendedHandler.postDelayed(extendedInfoChecker, 2000);
                     } else if (extendedInfoBitmaps.toArray().length > 1 && extendedInfoBitmaps.get(0) != null && !(currentContent.equals(ButtonActions.getExtendedInfoString()))) {
                         castGrid();
-                        new Thread(new ImageGetter(extendedImage.getWidth(), extendedImage.getHeight(), 0)).start();
+                        new Thread(new ImageGetter(extendedImage.getWidth(), extendedImage.getHeight(), 0, getActivity())).start();
                         extendedHandler.postDelayed(extendedInfoChecker, 2000);
                     } else {
                         extendedHandler.postDelayed(extendedInfoChecker, 2000);
@@ -165,13 +159,12 @@ public Runnable extendedInfoChecker = new Runnable() {
 
                     if (elaspedTime == 0 || !progressRunner) {
                         extendedHandler.post(progressSetter);
-                    } else if (currentContent != ButtonActions.getExtendedInfoString() && !ButtonActions.isPaused())
+                    }
 
-                    if (ButtonActions.isPaused() && rootView.findViewById(R.id.play_pause_button_extended).getTag() != "play") {
+                    if (ButtonActions.isPaused()) {
                         rootView.findViewById(R.id.play_pause_button_extended).setBackgroundResource(R.drawable.play_button);
                         rootView.findViewById(R.id.play_pause_button_extended).setTag("play");
-
-                    } else if (!(ButtonActions.isPaused()) && rootView.findViewById(R.id.play_pause_button_extended).getTag() != "pause") {
+                    } else {
                         rootView.findViewById(R.id.play_pause_button_extended).setBackgroundResource(R.drawable.pause_button);
                         rootView.findViewById(R.id.play_pause_button_extended).setTag("pause");
                     }
@@ -201,22 +194,39 @@ public Runnable extendedInfoChecker = new Runnable() {
         int index;
         int width;
         int height;
+        Activity activity;
+        boolean success;
 
-        ImageGetter (int width, int height, int index) {
+        ImageGetter (int width, int height, int index, Activity activity) {
             this.index = index;
             this.width = width;
             this.height = height;
+            this.activity = activity;
         }
         @Override
         public void run() {
             currentContent = ButtonActions.getExtendedInfoString();
-            bitmap = Bitmap.createScaledBitmap(extendedInfoBitmaps.get(index), width , height , true);
+            final Bitmap bitmap = Bitmap.createScaledBitmap(extendedInfoBitmaps.get(index), width , height , true);
             Message msg = new Message();
             msg.obj = "bitmap";
-            extendedHandler.sendMessage(msg);
-            extendedHandler.obtainMessage();
+            try {
+                activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        ImageView imageView = (ImageView) activity.findViewById(R.id.image_main_extended);
+                        imageView.setImageBitmap(bitmap);
+                        success = true;
+                    }
+                });
+            } catch (NullPointerException e) {
+                    e.printStackTrace();
+            } finally {
+                if (!success) {
+                    currentContent = null;
+                }
+            }
         }
-    };
+    }
 
     private Runnable connectionChecker = new Runnable() {
         public void run() {
@@ -244,7 +254,7 @@ public Runnable extendedInfoChecker = new Runnable() {
         }
     };
 
-    private Runnable progressSetter = new Runnable() {
+    private Thread progressSetter = new Thread(new Runnable() {
         @Override
         public void run() {
             lock.lock();
@@ -285,16 +295,13 @@ public Runnable extendedInfoChecker = new Runnable() {
 
                 lock.unlock();
                 if (ButtonActions.isPaused() || !ButtonActions.playerInfoGotten() || !progressRunner){
-                    System.out.println("Button Actions: " + ButtonActions.isPaused());
-                    System.out.println("Player Info: " + ButtonActions.playerInfoGotten());
-                    System.out.println("Progress Runner: " + progressRunner);
                     progressRunner = false;
                 } else {
                     extendedHandler.postDelayed(progressSetter, 1000);
                 }
             }
         }
-    };
+    });
 
 
 
@@ -529,6 +536,7 @@ public Runnable extendedInfoChecker = new Runnable() {
         super.onPause();
         extendedHandler.removeCallbacks(null);
         progressRunner = false;
+        progressSetter.interrupt();
         elaspedTime = 0;
     }
 
@@ -539,6 +547,7 @@ public Runnable extendedInfoChecker = new Runnable() {
         super.onStop();
         extendedHandler.removeCallbacks(null);
         progressRunner = false;
+        progressSetter.interrupt();
         elaspedTime = 0;
 
     }

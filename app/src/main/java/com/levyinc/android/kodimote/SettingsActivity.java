@@ -21,10 +21,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Toast;
 
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.handshake.ServerHandshake;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -35,9 +32,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.net.URI;
 import java.net.URL;
-import java.nio.channels.NotYetConnectedException;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -47,31 +43,33 @@ public class SettingsActivity extends Fragment {
 
     private View rootView;
     private Handler connectHandler = new Handler();
+    ProgressDialog socketDialog;
 
     EditText inputIp;
     EditText inputPort;
     SharedPreferences sharedPreferences;
-    SharedPreferences.Editor editor;
     StringBuffer jsonString;
     ConnectivityManager cm;
     WebSocketEndpoint webSocketEndpoint;
+    Boolean response = false;
+    Long connectTime;
 
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         rootView = inflater.inflate(R.layout.settings_activity, container, false);
 
-        cm = (ConnectivityManager) getActivity().getSystemService(getActivity().CONNECTIVITY_SERVICE);
+        cm = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
         sharedPreferences = getActivity().getSharedPreferences("connection_info", Context.MODE_PRIVATE);
-        editor = sharedPreferences.edit();
-
-
 
         inputIp = (EditText) rootView.findViewById(R.id.input_ip_edit_text);
         inputIp.setText(sharedPreferences.getString("input_ip", ""));
         inputPort = (EditText) rootView.findViewById(R.id.input_port_edit_text);
         inputPort.setText(sharedPreferences.getString("input_port", ""));
         final SwitchCompat socketSwitch = (SwitchCompat) rootView.findViewById(R.id.connect_ws_switch);
+        if (sharedPreferences.getString("WS", "").equals("y")){
+            socketSwitch.setChecked(true);
+        }
 
 
         connectHandler = new Handler(Looper.getMainLooper()) {
@@ -82,10 +80,10 @@ public class SettingsActivity extends Fragment {
                 SharedPreferences sharedPreferences = getActivity().getSharedPreferences("connection_info", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = sharedPreferences.edit();
                 String mString = (String) msg.obj;
-                Snackbar.make(getView(), mString, Snackbar.LENGTH_SHORT).show();
+                Snackbar.make(rootView, mString, Snackbar.LENGTH_SHORT).show();
                 if (mString.equals("Success")) {
-                    editor.putString("successful_connection", "y");
-                    editor.apply();
+                    editor.putString("successful_connection", "y").apply();
+                    editor.putString("WS", "n").apply();
                 } else {
                     editor.putString("successful_connection", "n");
                     editor.apply();
@@ -98,22 +96,29 @@ public class SettingsActivity extends Fragment {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                editor.putString("input_ip", inputIp.getText().toString());
-                editor.apply();
-                editor.putString("input_port", inputPort.getText().toString());
-                editor.apply();
+                sharedPreferences.edit().putString("input_ip", inputIp.getText().toString()).apply();
+                sharedPreferences.edit().putString("input_port", inputPort.getText().toString()).apply();
                 if (socketSwitch.isChecked()) {
+                    socketDialog = new ProgressDialog(getContext(), R.style.newDialog);
+                    socketDialog.setTitle("Connecting to WebSocket");
+                    socketDialog.setMessage("Attempting to connect to WebSocket\n" + sharedPreferences.getString("input_ip","") + ":" + sharedPreferences.getString("input_port", ""));
+                    socketDialog.setCancelable(true); // disable dismiss by tapping outside of the dialog
+                    socketDialog.show();
+                    Calendar cal = Calendar.getInstance();
+                    connectTime = cal.getTimeInMillis();
                     webSocketEndpoint = new WebSocketEndpoint(inputIp.getText().toString(), inputPort.getText().toString());
+                    socketRunnable.run();
+
                 } else{
+                    sharedPreferences.edit().putString("WS", "n").apply();
                     NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
                     try {
                         if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
                             Thread thread = new Thread(new HTTPConnector(sharedPreferences.getString("input_ip", ""), sharedPreferences.getString("input_port", "")));
                             thread.start();
                         } else {
-                            Toast.makeText(getActivity(), "Wifi connection not detected", Toast.LENGTH_SHORT).show();
-                            editor.putString("successful_connection", "n");
-                            editor.apply();
+                            Snackbar.make(view, "Wifi connection not detected", Snackbar.LENGTH_SHORT).show();
+                            sharedPreferences.edit().putString("successful_connection", "n").apply();
                         }
                     } catch (Exception exception) {
                         exception.printStackTrace();
@@ -128,10 +133,43 @@ public class SettingsActivity extends Fragment {
         return rootView;
     }
 
+    Runnable socketRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (!response) {
+                if (webSocketEndpoint.getOnOpenMessage() != null) {
+                    Snackbar.make(getView(), "Success", Snackbar.LENGTH_SHORT).show();
+                    response = true;
+                } else if (webSocketEndpoint.getOnOpenMessage() != null) {
+                    if (webSocketEndpoint.getCloseMessage().equals("No route to host")) {
+                        Snackbar.make(getView(), "Failed", Snackbar.LENGTH_SHORT).show();
+                    }
+                    response = true;
+                } else if (connectTime + 10000 < Calendar.getInstance().getTimeInMillis()) {
+                    socketDialog.dismiss();
+                    sharedPreferences.edit().putString("WS", "n").apply();
+                    response = true;
+                    Snackbar.make(getView(), "Failed", Snackbar.LENGTH_SHORT).show();
+                } else {
+                    connectHandler.postDelayed(socketRunnable, 300);
+                }
+            } else {
+                socketDialog.dismiss();
+                sharedPreferences.edit().putString("WS", "y").apply();
+            }
+        }
+    };
 
     public class AsyncScan extends AsyncTask <Void, Void, Boolean> {
 
         ProgressDialog progressDialog = new ProgressDialog(getContext(), R.style.newDialog);
+
+        View currentView;
+
+        AsyncScan (View view){
+            this.currentView = view;
+        }
+
 
         @Override
         protected Boolean doInBackground(Void... params) {
@@ -214,7 +252,7 @@ public class SettingsActivity extends Fragment {
         protected void onPreExecute() {
             progressDialog.setTitle("Scanning");
             progressDialog.setMessage("Wait while KodiMote is scanning for available devices...");
-            progressDialog.setCancelable(false); // disable dismiss by tapping outside of the dialog
+            progressDialog.setCancelable(true); // disable dismiss by tapping outside of the dialog
             progressDialog.show();
         }
 
@@ -222,10 +260,9 @@ public class SettingsActivity extends Fragment {
         protected void onPostExecute(Boolean response) {
             progressDialog.dismiss();
             if (response){
-                Toast.makeText(getContext(), "Success", Toast.LENGTH_SHORT).show();
+                Snackbar.make(currentView, "Success", Snackbar.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(getContext(), "No Device Found...", Toast.LENGTH_SHORT).show();
-
+                Snackbar.make(currentView, "No Device Found...", Snackbar.LENGTH_SHORT).show();
             }
         }
     }
@@ -240,9 +277,9 @@ public class SettingsActivity extends Fragment {
             public void onClick(View v) {
                 NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
                 if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
-                    new AsyncScan().execute();
+                    new AsyncScan(v).execute();
                 } else {
-                    Toast.makeText(getContext(), "No WIFI connnection detected", Toast.LENGTH_SHORT).show();
+                    Snackbar.make(v, "No WIFI connnection detected", Snackbar.LENGTH_SHORT).show();
                 }
             }
         });
@@ -333,62 +370,6 @@ public class SettingsActivity extends Fragment {
                 if (exception.toString().contains("java.net.UnknownHostException") || exception.toString().contains("java.net.ConnectException")) {
                     Message msg=new Message();
                     msg.obj="Failed";
-                    connectHandler.sendMessage(msg);
-                    connectHandler.obtainMessage();
-
-                }
-            }
-        }
-    }
-
-
-    public class SocketConnector implements Runnable {
-
-        String IP;
-        String port;
-
-        SocketConnector(String ip, String port) {
-            this.IP = ip;
-            this.port = port;
-        }
-
-        @Override
-        public void run() {
-            try {
-                URI uri = new URI("ws://" + this.IP + ":" + this.port + "/jsonrpc");
-                System.out.println(uri);
-                WebSocketClient webSocketClient = new WebSocketClient(uri) {
-                    @Override
-                    public void onOpen(ServerHandshake handshakedata) {
-                        System.out.println(handshakedata);
-                    }
-
-                    @Override
-                    public void onMessage(String message) {
-                        System.out.println(message);
-                    }
-
-                    @Override
-                    public void onClose(int code, String reason, boolean remote) {
-                        System.out.println(code + reason);
-                    }
-
-                    @Override
-                    public void onError(Exception ex) {
-                        ex.printStackTrace();
-                    }
-
-                    @Override
-                    public void send(String text) throws NotYetConnectedException {
-                        super.send(text);
-                    }
-                };
-                webSocketClient.connect();
-            } catch (Exception exception) {
-                exception.printStackTrace();
-                if (exception.toString().contains("java.net.UnknownHostException") || exception.toString().contains("java.net.ConnectException")) {
-                    Message msg = new Message();
-                    msg.obj = "Failed";
                     connectHandler.sendMessage(msg);
                     connectHandler.obtainMessage();
 

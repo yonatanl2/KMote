@@ -260,4 +260,38 @@ class WebSocketEndpoint {
         webSocketClient.close();
     }
 
+    private class PowerAction implements Runnable {
+
+        String action;
+        PowerAction (String action) {
+            this.action = action;
+        }
+
+        @Override
+        public void run() {
+            try {
+
+                JSONObject jsonParam = new JSONObject();
+                jsonParam.put("jsonrpc", "2.0");
+                jsonParam.put("method", action);
+                jsonParam.put("id", 1);
+                byte[] bytes = jsonParam.toString().getBytes();
+                webSocketClient.send(bytes);
+
+            } catch (JSONException exception) {
+                exception.printStackTrace();
+            }
+        }
+    }
+
+    private PowerAction powerActionShutdown = new PowerAction("System.Shutdown");
+    private PowerAction powerActionReboot = new PowerAction("System.Reboot");
+
+    void powerButton(String method) {
+        if (method.equals("shutdown")) {
+            msgHandler.post(powerActionShutdown);
+        } else if (method.equals("reboot")) {
+            msgHandler.post(powerActionReboot);
+        }
+    }
 }

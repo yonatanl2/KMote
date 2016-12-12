@@ -117,13 +117,20 @@ public class Main2Activity extends Fragment {
                             if (wsActive) {
                                 connecting.setText("Connected");
                             } else {
-                                webSocketEndpoint = new WebSocketEndpoint(sharedPreferences.getString("input_ip", ""), sharedPreferences.getString("input_port", ""));
-                                if (webSocketEndpoint.getOnOpenMessage() != null) {
-                                    wsActive = true;
-                                    connecting.setText("Connected");
-
-                                } else {
+                                boolean success = false;
+                                try {
+                                    if (webSocketEndpoint.getOnOpenMessage() != null) {
+                                        wsActive = true;
+                                        connecting.setText("Connected");
+                                        success = true;
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                if (!success) {
+                                    webSocketEndpoint = new WebSocketEndpoint(sharedPreferences.getString("input_ip", ""), sharedPreferences.getString("input_port", ""));
                                     remoteHandler.postDelayed(connectionThread, 3500);
+
                                 }
                             }
                         }
@@ -255,12 +262,7 @@ public class Main2Activity extends Fragment {
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        remoteHandler.post(scalingThread);
         sharedPreferences = getActivity().getSharedPreferences("connection_info", Context.MODE_PRIVATE);
-        if (sharedPreferences.getString("successful_connection", "").equals("y")) {
-            remoteHandler.postDelayed(connectionThread, 100);
-            remoteHandler.postDelayed(playCheck, 500);
-        }
 
         setRepeatButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -624,6 +626,10 @@ public class Main2Activity extends Fragment {
 
     static boolean getWebSocketStatus() {
         return wsActive;
+    }
+
+    static void setWsActive() {
+        wsActive = false;
     }
 }
 

@@ -142,11 +142,18 @@ public class MainActivity extends AppCompatActivity {
 
         switch (item.getItemId()) {
             case (R.id.shutdown):
-                ButtonActions.powerButton("shutdown");
-
+                if (Main2Activity.getWebSocketStatus()) {
+                    Main2Activity.webSocketEndpoint.powerButton("shutdown");
+                } else {
+                    ButtonActions.powerButton("shutdown");
+                }
                 break;
             case (R.id.reboot):
-                ButtonActions.powerButton("reboot");
+                if (Main2Activity.getWebSocketStatus()) {
+                    Main2Activity.webSocketEndpoint.powerButton("reboot");
+                } else {
+                    ButtonActions.powerButton("reboot");
+                }
                 break;
             case(R.id.fullscreen):
                 ButtonActions.toggleFullScreen();

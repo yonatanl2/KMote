@@ -72,12 +72,7 @@ public class SettingsActivity extends Fragment {
             socketSwitch.setChecked(true);
         }
 
-        socketDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-            @Override
-            public void onCancel(DialogInterface dialogInterface) {
-                connectHandler.removeCallbacksAndMessages(socketRunnable);
-            }
-        });
+
         connectHandler = new Handler(Looper.getMainLooper()) {
 
             @Override
@@ -102,10 +97,17 @@ public class SettingsActivity extends Fragment {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Main2Activity.setWsActive();
                 sharedPreferences.edit().putString("input_ip", inputIp.getText().toString()).apply();
                 sharedPreferences.edit().putString("input_port", inputPort.getText().toString()).apply();
                 if (socketSwitch.isChecked()) {
                     socketDialog = new ProgressDialog(getContext(), R.style.newDialog);
+                    socketDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+                        @Override
+                        public void onCancel(DialogInterface dialogInterface) {
+                            connectHandler.removeCallbacksAndMessages(socketRunnable);
+                        }
+                    });
                     socketDialog.setTitle("Connecting to WebSocket");
                     socketDialog.setMessage("Attempting to connect to WebSocket\n" + sharedPreferences.getString("input_ip","") + ":" + sharedPreferences.getString("input_port", ""));
                     socketDialog.setCancelable(true); // disable dismiss by tapping outside of the dialog

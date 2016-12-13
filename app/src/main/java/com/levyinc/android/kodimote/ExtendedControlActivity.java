@@ -477,6 +477,7 @@ public Runnable extendedInfoChecker = new Runnable() {
                                             switch (which){
                                                 case 0:
                                                     ButtonActions.getSubs();
+                                                    viewPager.setCurrentItem(1);
                                                     break;
                                                 default:
                                                     ButtonActions.subtitleAction(which - 1);

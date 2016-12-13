@@ -196,6 +196,7 @@ public class Main2Activity extends Fragment {
     @Override
     public View onCreateView(final LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         myView = inflater.inflate(R.layout.remote_activity, container, false);
+        remoteHandler.post(scalingThread);
         connecting = (TextView) myView.findViewById(R.id.connect_message);
         playPause = (ImageButton) myView.findViewById(R.id.play_pause_button);
 
@@ -582,8 +583,8 @@ public class Main2Activity extends Fragment {
     public void onResume() {
         super.onResume();
         playPause.setTag("");
+        wsActive = false;
         if (sharedPreferences.getString("successful_connection", "").equals("y")) {
-            remoteHandler.post(scalingThread);
             remoteHandler.postDelayed(connectionThread, 100);
             remoteHandler.postDelayed(playCheck, 500);
 

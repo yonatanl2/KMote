@@ -69,26 +69,6 @@ class WebSocketEndpoint {
             }
         }
     }
-    void sendMessage() {
-        try {
-            JSONObject jsonParam = new JSONObject();
-            jsonParam.put("jsonrpc", "2.0");
-            jsonParam.put("method", "GUI.ShowNotification");
-            jsonParam.put("id", 1);
-            JSONObject jsonParam2 = new JSONObject();
-            jsonParam2.put("title", "New remote connection");
-            jsonParam2.put("message", "WEBSOCKET");
-            jsonParam.put("params", jsonParam2);
-            byte[] bytes = jsonParam.toString().getBytes();
-
-            webSocketClient.send(bytes);
-            webSocketClient.close();
-
-        } catch (Exception exception){
-            exception.printStackTrace();
-        }
-
-    }
 
     private Runnable downRun = new Runnable() {
         @Override

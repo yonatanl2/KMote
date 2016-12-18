@@ -379,7 +379,7 @@ class ButtonActions {
                 while ((line = br.readLine()) != null) {
                     jsonString.append(line);
                 }
-
+                Log.println(Log.DEBUG, "Responses", jsonString.toString());
                 Pattern pattern = Pattern.compile("\"playerid\":(\\d)");
                 Matcher matcher = pattern.matcher(jsonString);
                 if (matcher.find()) {
@@ -425,6 +425,8 @@ class ButtonActions {
                             jsonString.append(line);
                         }
                         br.close();
+                        Log.println(Log.DEBUG, "Responses", jsonString.toString());
+
 
                         isPaused = !(jsonString.toString().contains("\"speed\":1"));
 
@@ -566,6 +568,7 @@ class ButtonActions {
                                                     }
 
                                                     br.close();
+                                                    Log.println(Log.DEBUG, "Responses", jsonString.toString());
 
                                                     Pattern seasonPattern = Pattern.compile("(?<=season\":)\\d*");
                                                     Matcher seasonMatcher = seasonPattern.matcher(jsonString);
@@ -689,6 +692,12 @@ class ButtonActions {
                                         } catch (IOException | JSONException exception) {
                                             exception.printStackTrace();
                                         }
+                                        } else {
+                                            Log.println(Log.DEBUG, "Response", "none");
+                                            Log.println(Log.DEBUG, "Response", String.valueOf(playerInfoGotten()));
+                                            Log.println(Log.DEBUG, "Response", playerInfo.toArray().toString());
+
+
                                         }
                                     }
                                 }

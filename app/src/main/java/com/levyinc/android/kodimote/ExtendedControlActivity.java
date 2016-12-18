@@ -215,12 +215,13 @@ public Runnable extendedInfoChecker = new Runnable() {
                     public void run() {
                         ImageView imageView = (ImageView) activity.findViewById(R.id.image_main_extended);
                         imageView.setImageBitmap(bitmap);
-                        success = true;
                     }
                 });
+                success = true;
             } catch (NullPointerException e) {
                     e.printStackTrace();
             } finally {
+                System.out.println(success);
                 if (!success) {
                     currentContent = null;
                 }

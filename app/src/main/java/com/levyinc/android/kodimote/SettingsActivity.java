@@ -54,6 +54,8 @@ public class SettingsActivity extends Fragment {
     WebSocketEndpoint webSocketEndpoint;
     Boolean response = false;
     Long connectTime;
+    ScannerHandler scannerHandler;
+
 
 
     @Override
@@ -68,7 +70,7 @@ public class SettingsActivity extends Fragment {
         inputPort = (EditText) rootView.findViewById(R.id.input_port_edit_text);
         inputPort.setText(sharedPreferences.getString("input_port", ""));
         final SwitchCompat socketSwitch = (SwitchCompat) rootView.findViewById(R.id.connect_ws_switch);
-        if (sharedPreferences.getString("WS", "").equals("y")){
+        if (sharedPreferences.getString("WS", "").equals("y")) {
             socketSwitch.setChecked(true);
         }
 
@@ -109,7 +111,7 @@ public class SettingsActivity extends Fragment {
                         }
                     });
                     socketDialog.setTitle("Connecting to WebSocket");
-                    socketDialog.setMessage("Attempting to connect to WebSocket\n" + sharedPreferences.getString("input_ip","") + ":" + sharedPreferences.getString("input_port", ""));
+                    socketDialog.setMessage("Attempting to connect to WebSocket\n" + sharedPreferences.getString("input_ip", "") + ":" + sharedPreferences.getString("input_port", ""));
                     socketDialog.setCancelable(true); // disable dismiss by tapping outside of the dialog
                     socketDialog.show();
                     Calendar cal = Calendar.getInstance();
@@ -118,7 +120,7 @@ public class SettingsActivity extends Fragment {
                     response = false;
                     socketRunnable.run();
 
-                } else{
+                } else {
                     sharedPreferences.edit().putString("WS", "n").apply();
                     NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
                     try {
@@ -136,7 +138,62 @@ public class SettingsActivity extends Fragment {
             }
         });
 
+        Button scanButton = (Button) rootView.findViewById(R.id.scan_button);
+        scanButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ButtonActions.stopAsynchTask();
+                NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+                if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
+                    if (socketSwitch.isChecked()) {
+                        final SocketScanner socketScanner = new SocketScanner(sharedPreferences);
+                        final Thread t1 = new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                socketScanner.scan(scannerHandler);
+                            }
+                        });
+                        final Thread t2 = new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                socketScanner.scanWebSocket(scannerHandler);
+                            }
+                        });
+                        socketScanner.setCheckerThread(t2);
+                        socketDialog = new ProgressDialog(getContext(), R.style.newDialog);
+                        socketDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+                            @Override
+                            public void onCancel(DialogInterface dialogInterface) {
+                                connectHandler.removeCallbacksAndMessages(socketRunnable);
+                            }
+                        });
+                        socketDialog.setTitle("Scanning for WebSocket");
+                        socketDialog.setMessage("Wait while KodiMote is scanning for available WebSocket...");
+                        socketDialog.setCancelable(true); // disable dismiss by tapping outside of the dialog
+                        socketDialog.show();
+                        socketDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+                            @Override
+                            public void onCancel(DialogInterface dialog) {
+                                t1.interrupt();
+                                t2.interrupt();
+                                socketDialog.dismiss();
+                            }
+                        });
+                        scannerHandler = new ScannerHandler(v, socketDialog);
+                        t1.setName("scanning thread");
+                        t2.setName("running thread");
+                        t2.start();
+                        t1.start();
 
+                    }
+                    else {
+                        new AsyncScan(v, getContext()).execute();
+                    }
+                } else {
+                    Snackbar.make(v, "No WIFI connnection detected", Snackbar.LENGTH_SHORT).show();
+                }
+            }
+        });
 
 
         return rootView;
@@ -150,18 +207,25 @@ public class SettingsActivity extends Fragment {
                     if (webSocketEndpoint.getOnOpenMessage() != null) {
                         Snackbar.make(getView(), "Success", Snackbar.LENGTH_SHORT).show();
                         sharedPreferences.edit().putString("WS", "y").apply();
+                        sharedPreferences.edit().putString("input_ip", inputIp.getText().toString()).apply();
+                        sharedPreferences.edit().putString("input_port", inputPort.getText().toString()).apply();
+                        sharedPreferences.edit().putString("successful_connection", "y").apply();
+                        webSocketEndpoint.disconnect();
                         response = true;
                         socketDialog.dismiss();
                     } else if (webSocketEndpoint.getCloseMessage() != null) {
                         if (webSocketEndpoint.getCloseMessage().equals("No route to host")) {
                             Snackbar.make(getView(), "Failed", Snackbar.LENGTH_SHORT).show();
                             sharedPreferences.edit().putString("WS", "n").apply();
+                            sharedPreferences.edit().putString("successful_connection", "n").apply();
+
                         }
                         response = true;
                         socketDialog.dismiss();
                     } else if (connectTime + 10000 < Calendar.getInstance().getTimeInMillis()) {
                         socketDialog.dismiss();
                         sharedPreferences.edit().putString("WS", "n").apply();
+                        sharedPreferences.edit().putString("successful_connection", "n").apply();
                         response = true;
                         Snackbar.make(getView(), "Failed", Snackbar.LENGTH_SHORT).show();
                     } else {
@@ -177,13 +241,14 @@ public class SettingsActivity extends Fragment {
         }
     };
 
-    public class AsyncScan extends AsyncTask <Void, Void, Boolean> {
+    public class AsyncScan extends AsyncTask<Void, Void, Boolean> {
 
         View currentView;
         ProgressDialog progressDialog;
+        String port = "8080";
 
 
-        AsyncScan (View view, Context context){
+        AsyncScan(View view, Context context) {
             this.currentView = view;
             progressDialog = new ProgressDialog(context, R.style.newDialog);
             progressDialog.setTitle("Scanning");
@@ -207,7 +272,7 @@ public class SettingsActivity extends Fragment {
                     List<InetAddress> addrs = Collections.list(intf.getInetAddresses());
                     for (InetAddress addr : addrs) {
                         if (!addr.isLoopbackAddress()) {
-                            if (addr.getHostAddress().indexOf(':')<0) {
+                            if (addr.getHostAddress().indexOf(':') < 0) {
                                 tempString = addr.getHostAddress();
                             }
                         }
@@ -216,59 +281,60 @@ public class SettingsActivity extends Fragment {
                 if (tempString != null) {
                     Pattern ipPattern = Pattern.compile("\\.\\d*$");
                     Matcher ipMatcher = ipPattern.matcher(tempString);
-                if (ipMatcher.find()) {
-                    tempString = ipMatcher.replaceAll("");
-                    for (int i = 0; i < 30; i++) {
-                        if (isCancelled()){
-                            break;
-                        }
-                        try {
-                            URL url = new URL("http://" + (tempString + "." + i) + ":8080/jsonrpc");
-                            System.out.println("attempting: " + url);
-                            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                            conn.setDoOutput(true);
-                            conn.setConnectTimeout(1500);
-                            conn.setRequestMethod("POST");
-                            conn.setRequestProperty("Content-Type", "application/json");
-                            JSONObject jsonParam = new JSONObject();
-                            jsonParam.put("jsonrpc", "2.0");
-                            jsonParam.put("method", "GUI.ShowNotification");
-                            jsonParam.put("id", 1);
-                            JSONObject jsonParam2 = new JSONObject();
-                            jsonParam2.put("title", "New remote connection");
-                            jsonParam2.put("message", "KodiMote is connected");
-                            jsonParam.put("params", jsonParam2);
-                            byte[] bytes = jsonParam.toString().getBytes("UTF-8");
-                            conn.setDoOutput(true);
-                            conn.setDoInput(true);
-                            conn.setUseCaches(false);
-                            conn.connect();
-                            OutputStream printout = conn.getOutputStream();
-                            printout.write(bytes);
-                            printout.flush();
-                            printout.close();
-                            BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                            jsonString = new StringBuffer();
-                            String line;
-                            while ((line = br.readLine()) != null) {
-                                jsonString.append(line);
-                            }
-                            br.close();
-                            if (conn.getResponseCode() == 200) {
-                                System.out.println(url);
-                                status = true;
-                                sharedPreferences.edit().putString("input_ip", tempString + "." + i).apply();
-                                sharedPreferences.edit().putString("input_port", "8080").apply();
-                                sharedPreferences.edit().putString("successful_connection", "y").apply();
+                    if (ipMatcher.find()) {
+                        tempString = ipMatcher.replaceAll("");
+                        for (int i = 0; i < 30; i++) {
+                            if (isCancelled()) {
                                 break;
-                            } else {
-                                sharedPreferences.edit().putString("successful_connection", "n").apply();
                             }
-                        } catch (IOException | JSONException exception) {
-                            Log.i("connection exceptions", exception.toString());
+                            try {
+                                URL url = new URL("http://" + (tempString + "." + i) + ":" + port + "/jsonrpc");
+                                Log.println(Log.WARN, "Scanner", "Scanning Network: " + url.toString());
+                                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                                conn.setDoOutput(true);
+                                conn.setConnectTimeout(1500);
+                                conn.setRequestMethod("POST");
+                                conn.setRequestProperty("Content-Type", "application/json");
+                                JSONObject jsonParam = new JSONObject();
+                                jsonParam.put("jsonrpc", "2.0");
+                                jsonParam.put("method", "GUI.ShowNotification");
+                                jsonParam.put("id", 1);
+                                JSONObject jsonParam2 = new JSONObject();
+                                jsonParam2.put("title", "New remote connection");
+                                jsonParam2.put("message", "KodiMote is connected");
+                                jsonParam.put("params", jsonParam2);
+                                byte[] bytes = jsonParam.toString().getBytes("UTF-8");
+                                conn.setDoOutput(true);
+                                conn.setDoInput(true);
+                                conn.setUseCaches(false);
+                                conn.connect();
+                                OutputStream printout = conn.getOutputStream();
+                                printout.write(bytes);
+                                printout.flush();
+                                printout.close();
+                                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                                jsonString = new StringBuffer();
+                                String line;
+                                while ((line = br.readLine()) != null) {
+                                    jsonString.append(line);
+                                }
+                                br.close();
+                                if (conn.getResponseCode() == 200) {
+                                    System.out.println(url);
+                                    status = true;
+                                    sharedPreferences.edit().putString("input_ip", tempString + "." + i).apply();
+                                    sharedPreferences.edit().putString("input_port", port).apply();
+                                    sharedPreferences.edit().putString("successful_connection", "y").apply();
+                                    break;
+                                } else {
+                                    sharedPreferences.edit().putString("successful_connection", "n").apply();
+                                }
+
+                            } catch (IOException | JSONException exception) {
+                                Log.i("connection exceptions", exception.toString());
+                            }
                         }
                     }
-                }
                 } else {
                     sharedPreferences.edit().putString("successful_connection", "n").apply();
                 }
@@ -287,7 +353,7 @@ public class SettingsActivity extends Fragment {
         @Override
         protected void onPostExecute(Boolean response) {
             progressDialog.dismiss();
-            if (response){
+            if (response) {
                 Snackbar.make(currentView, "Success", Snackbar.LENGTH_SHORT).show();
             } else {
                 Snackbar.make(currentView, "No Device Found...", Snackbar.LENGTH_SHORT).show();
@@ -298,36 +364,6 @@ public class SettingsActivity extends Fragment {
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-        Button scanButton = (Button) rootView.findViewById(R.id.scan_button);
-        scanButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-                if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
-                    new AsyncScan(v, getContext()).execute();
-                } else {
-                    Snackbar.make(v, "No WIFI connnection detected", Snackbar.LENGTH_SHORT).show();
-                }
-            }
-        });
-
-
-      /*  Button connectWS = (Button) rootView.findViewById(R.id.connect_ws_button);
-        connectWS.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                webSocketEndpoint = new WebSocketEndpoint(inputIp.getText().toString(), inputPort.getText().toString());
-            }
-        });*/
-
-        Button random = (Button) rootView.findViewById(R.id.button99);
-        random.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                webSocketEndpoint.sendMessage();
-            }
-        });
     }
 
     class HTTPConnector implements Runnable {
@@ -395,7 +431,7 @@ public class SettingsActivity extends Fragment {
 
             catch (IOException | JSONException exception) {
                 exception.printStackTrace();
-                if (exception.toString().contains("java.net.UnknownHostException") || exception.toString().contains("java.net.ConnectException")) {
+                if (exception.toString().contains("java.net.UnknownHostException") || exception.toString().contains("java.net.ConnectException") || exception.toString().contains("java.net.NoRouteToHostException")) {
                     Message msg=new Message();
                     msg.obj="Failed";
                     connectHandler.sendMessage(msg);

@@ -85,10 +85,18 @@ public class Main2Activity extends Fragment {
 
     private Runnable statusChecker = new Runnable() {
         public void run() {
-            if (ButtonActions.getStatus()) {
-                connecting.setText("Connected");
+            if (!sharedPreferences.getString("WS", "").equals("y")) {
+                if (ButtonActions.getStatus()) {
+                    connecting.setText("Connected");
+                } else {
+                    remoteHandler.postDelayed(connectionThread, 1000);
+                }
             } else {
-                remoteHandler.postDelayed(connectionThread, 1000);
+                if (wsActive) {
+                    connecting.setText("Connected");
+                } else {
+                    remoteHandler.postDelayed(connectionThread, 1000);
+                }
             }
         }
     };
@@ -122,6 +130,7 @@ public class Main2Activity extends Fragment {
                                     if (webSocketEndpoint.getOnOpenMessage() != null) {
                                         wsActive = true;
                                         connecting.setText("Connected");
+                                        remoteHandler.postDelayed(intialHandlerSetter, 300);
                                         success = true;
                                     }
                                 } catch (Exception e) {
@@ -129,8 +138,7 @@ public class Main2Activity extends Fragment {
                                 }
                                 if (!success) {
                                     webSocketEndpoint = new WebSocketEndpoint(sharedPreferences.getString("input_ip", ""), sharedPreferences.getString("input_port", ""));
-                                    remoteHandler.postDelayed(connectionThread, 3500);
-
+                                    remoteHandler.postDelayed(statusChecker, 3000);
                                 }
                             }
                         }
@@ -149,10 +157,31 @@ public class Main2Activity extends Fragment {
     private Thread playCheck = new Thread(new Runnable() {
             @Override
             public void run () {
-                if (!wsActive) {
+                if (wsActive) {
+                    if (webSocketEndpoint.playerInfoGotten()) {
+                        if (videoLayout.getVisibility() != View.VISIBLE || connecting.getVisibility() != View.INVISIBLE) {
+                            videoLayout.setVisibility(View.VISIBLE);
+                            connecting.setVisibility(View.INVISIBLE);
+                        }
+                        if (webSocketEndpoint.pauseStatus() && playPause.getTag() != "play") {
+                            playPause.setBackgroundResource(R.drawable.play_button);
+                            playPause.setTag("play");
+                            paused = true;
+                        } else if (!(webSocketEndpoint.pauseStatus()) && playPause.getTag() != "pause") {
+                            playPause.setBackgroundResource(R.drawable.pause_button);
+                            playPause.setTag("pause");
+                            paused = false;
+                        }
+                    } else {
+                        videoLayout.setVisibility(View.INVISIBLE);
+                        connecting.setVisibility(View.VISIBLE);
+                    }
+                } else {
                     if (ButtonActions.playerInfoGotten()) {
-                        videoLayout.setVisibility(View.VISIBLE);
-                        connecting.setVisibility(View.INVISIBLE);
+                        if (videoLayout.getVisibility() != View.VISIBLE || connecting.getVisibility() != View.INVISIBLE) {
+                            videoLayout.setVisibility(View.VISIBLE);
+                            connecting.setVisibility(View.INVISIBLE);
+                        }
                         if (ButtonActions.isPaused() && playPause.getTag() != "play") {
                             playPause.setBackgroundResource(R.drawable.play_button);
                             playPause.setTag("play");
@@ -184,8 +213,16 @@ public class Main2Activity extends Fragment {
     private Runnable intialHandlerSetter = new Runnable() {
         @Override
         public void run() {
-            ButtonActions.getInfo();
-            remoteHandler.postDelayed(infoChecker, 300);
+            if (wsActive) {
+                webSocketEndpoint.getInfo();
+                remoteHandler.postDelayed(intialHandlerSetter, 1000);
+                if (webSocketEndpoint.playerInfoGotten()) {
+                    remoteHandler.postDelayed(playCheck, 500);
+                }
+            } else {
+                ButtonActions.getInfo();
+                remoteHandler.postDelayed(infoChecker, 300);
+            }
         }
     };
 
@@ -199,7 +236,6 @@ public class Main2Activity extends Fragment {
         remoteHandler.post(scalingThread);
         connecting = (TextView) myView.findViewById(R.id.connect_message);
         playPause = (ImageButton) myView.findViewById(R.id.play_pause_button);
-
         select = (ImageButton) myView.findViewById(R.id.select);
         buttonDown = (ImageButton) myView.findViewById(R.id.arrow_button_4);
         buttonUp = (ImageButton) myView.findViewById(R.id.arrow_button_2);
@@ -360,8 +396,6 @@ public class Main2Activity extends Fragment {
                     public void onStopTrackingTouch(SeekBar seekBar) {
                     }
                 });
-
-
             }
         });
 
@@ -529,8 +563,13 @@ public class Main2Activity extends Fragment {
         playPause.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view){
-                ButtonActions.playPause();
-                paused = !paused;
+                if (!wsActive) {
+                    ButtonActions.playPause();
+                    paused = !paused;
+                } else {
+                    webSocketEndpoint.startPlayPause();
+                    paused = !paused;
+                }
             }
         });
 
@@ -557,27 +596,37 @@ public class Main2Activity extends Fragment {
         stop.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view){
-                ButtonActions.stop();
+                if (!wsActive) {
+                    ButtonActions.stop();
+                } else {
+                    webSocketEndpoint.startStop();
+                }
             }
         });
 
         rollBack.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view) {
-                ButtonActions.rollBack();
+                if (!wsActive) {
+                    ButtonActions.rollBack();
+                } else {
+                    webSocketEndpoint.startRollBack();
+                }
             }
         });
 
         fastForward.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view){
-                ButtonActions.fastForward();
+                if (!wsActive) {
+                    ButtonActions.fastForward();
+                } else {
+                    webSocketEndpoint.startFastForward();
+                }
             }
         });
 
     }
-
-
 
     @Override
     public void onResume() {
@@ -590,7 +639,6 @@ public class Main2Activity extends Fragment {
 
         }
     }
-    
 
     @Override
     public void onPause() {
@@ -600,7 +648,6 @@ public class Main2Activity extends Fragment {
         }
         remoteHandler.removeCallbacksAndMessages(null);
         ButtonActions.stopAsynchTask();
-
     }
 
     @Override

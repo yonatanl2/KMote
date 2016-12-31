@@ -9,10 +9,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
-
 import java.util.ArrayList;
 
-public class CastAdapter extends BaseAdapter{
+class CastAdapter extends BaseAdapter{
 
     private ArrayList<String> cast;
     private Context context;
@@ -21,7 +20,7 @@ public class CastAdapter extends BaseAdapter{
     private TypedArray sColor;
     private int defaultColor;
 
-    CastAdapter (Context context, ArrayList cast, int layout, int layoutWidth) {
+    CastAdapter (Context context, ArrayList<String> cast, int layout, int layoutWidth) {
         this.cast = cast;
         this.context = context;
         this.layout = layout;
@@ -58,5 +57,9 @@ public class CastAdapter extends BaseAdapter{
         textView.setHeight(boxheights);
         textView.setBackgroundColor(sColor.getColor(Math.abs(cast.get(position).hashCode() % sColor.length()), defaultColor));
         return textView;
+    }
+
+    ArrayList<String> getArrayList() {
+        return cast;
     }
 }

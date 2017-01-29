@@ -318,7 +318,7 @@ class WebSocketEndpoint {
                             ExtendedControlActivity.setPlot(plot);
                         }
                     }
-                    if (responseMessage.contains("System.OnQuit")) {
+                    if (message.contains("System.OnQuit")) {
                         webSocketClient.close();
                     }
                 }
@@ -1053,26 +1053,28 @@ class WebSocketEndpoint {
 
         @Override
         public void run() {
-            try {
-                Pattern pattern3 = Pattern.compile("\\d$");
-                Matcher matcher3 = pattern3.matcher(playerInfo.get(0));
+            if (playerInfo.size() > 0) {
+                try {
+                    Pattern pattern3 = Pattern.compile("\\d$");
+                    Matcher matcher3 = pattern3.matcher(playerInfo.get(0));
 
-                if (matcher3.find()) {
-                    JSONObject jsonParam = new JSONObject();
-                    jsonParam.put("jsonrpc", "2.0");
-                    jsonParam.put("method", "Player.SetShuffle");
-                    jsonParam.put("id", 1);
+                    if (matcher3.find()) {
+                        JSONObject jsonParam = new JSONObject();
+                        jsonParam.put("jsonrpc", "2.0");
+                        jsonParam.put("method", "Player.SetShuffle");
+                        jsonParam.put("id", 1);
 
 
-                    JSONObject jsonParam2 = new JSONObject();
-                    jsonParam2.put("playedid", parseInt(matcher3.group()));
-                    jsonParam2.put("shuffle", !isShuffled);
-                    jsonParam.put("params", jsonParam2);
-                    webSocketClient.send(jsonParam.toString().getBytes());
-                    isShuffled = !isShuffled;
+                        JSONObject jsonParam2 = new JSONObject();
+                        jsonParam2.put("playedid", parseInt(matcher3.group()));
+                        jsonParam2.put("shuffle", !isShuffled);
+                        jsonParam.put("params", jsonParam2);
+                        webSocketClient.send(jsonParam.toString().getBytes());
+                        isShuffled = !isShuffled;
+                    }
+                } catch (JSONException exception) {
+                    exception.printStackTrace();
                 }
-            } catch (JSONException exception) {
-                exception.printStackTrace();
             }
         }
     };
@@ -1085,27 +1087,29 @@ class WebSocketEndpoint {
 
         @Override
         public void run() {
-            try {
-                Pattern pattern3 = Pattern.compile("\\d$");
-                Matcher matcher3 = pattern3.matcher(playerInfo.get(0));
+            if (playerInfo.size() > 0) {
+                try {
+                    Pattern pattern3 = Pattern.compile("\\d$");
+                    Matcher matcher3 = pattern3.matcher(playerInfo.get(0));
 
-                if (matcher3.find()) {
-                    JSONObject jsonParam = new JSONObject();
-                    jsonParam.put("jsonrpc", "2.0");
-                    jsonParam.put("method", "Player.SetShuffle");
-                    jsonParam.put("id", 1);
+                    if (matcher3.find()) {
+                        JSONObject jsonParam = new JSONObject();
+                        jsonParam.put("jsonrpc", "2.0");
+                        jsonParam.put("method", "Player.SetShuffle");
+                        jsonParam.put("id", 1);
 
 
-                    JSONObject jsonParam2 = new JSONObject();
-                    jsonParam2.put("playedid", parseInt(matcher3.group()));
-                    jsonParam2.put("shuffle", !isRepeat);
-                    jsonParam.put("params", jsonParam2);
-                    webSocketClient.send(jsonParam.toString().getBytes());
+                        JSONObject jsonParam2 = new JSONObject();
+                        jsonParam2.put("playedid", parseInt(matcher3.group()));
+                        jsonParam2.put("shuffle", !isRepeat);
+                        jsonParam.put("params", jsonParam2);
+                        webSocketClient.send(jsonParam.toString().getBytes());
 
-                    isRepeat = !isRepeat;
+                        isRepeat = !isRepeat;
+                    }
+                } catch (JSONException exception) {
+                    exception.printStackTrace();
                 }
-            } catch (JSONException exception) {
-                exception.printStackTrace();
             }
         }
     };
@@ -1132,7 +1136,7 @@ class WebSocketEndpoint {
         }
     };
 
-    void getInfoActino () {
+    void getInfoAction () {
         msgHandler.post(getInfo);
     }
 
@@ -1223,5 +1227,44 @@ class WebSocketEndpoint {
         msgHandler.post(clearVideoLibraryAction);
     }
 
+    private class TextInput implements Runnable {
+
+        String text;
+        TextInput (String text) {
+            this.text = text;
+        }
+
+        @Override
+        public void run() {
+            try {
+
+                JSONObject jsonParam = new JSONObject();
+                jsonParam.put("jsonrpc", "2.0");
+                jsonParam.put("method", "Input.SendText");
+                jsonParam.put("id", 1);
+
+
+                JSONObject jsonParam2 = new JSONObject();
+                jsonParam2.put("text", text);
+                jsonParam2.put("done", false);
+                jsonParam.put("params", jsonParam2);
+                webSocketClient.send(jsonParam.toString().getBytes());
+            } catch (JSONException exception) {
+                exception.printStackTrace();
+            }
+        }
+    }
+
+    void setText(String text) {
+     msgHandler.post(new TextInput(text));
+    }
+    boolean isIsShuffled(){
+
+        return isShuffled;
+    }
+
+    boolean isIsRepeat(){
+        return isRepeat;
+    }
 }
 

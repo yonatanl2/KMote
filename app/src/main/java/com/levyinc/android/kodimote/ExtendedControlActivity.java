@@ -59,10 +59,12 @@ public class ExtendedControlActivity extends Fragment {
     ExpandableHeightGridView castGrid;
     CastAdapter castAdapter;
     TextView scoreText;
+    Context mContext;
 
     private ArrayList<String> currentContent = null;
     static long elaspedTime;
     static long contentTime;
+    private static boolean gettingSubs;
     private long currentElaspedTime;
     static private Handler extendedHandler = new Handler();
     private Lock lock = new ReentrantLock();
@@ -125,20 +127,33 @@ public class ExtendedControlActivity extends Fragment {
 
     public void castGrid() {
         if (castArray != null) {
+            if (getContext() != null) {
+                mContext = getContext();
+            }
             try {
-                 if (castArray != ((CastAdapter) castGrid.getAdapter()).getArrayList()) {
+                if (castAdapter == null){
                     try {
                         castGrid.setExpanded(true);
                         castAdapter = new CastAdapter(getContext(), castArray, R.layout.grid_layout, nestedScrollView.getWidth());
                         castGrid.setAdapter(castAdapter);
+                        successCast = true;
+                    } catch (Exception exception) {
+                        exception.printStackTrace();
+                    }
+                } else if (castArray != ((CastAdapter) castGrid.getAdapter()).getArrayList()) {
+                    try {
+                        castGrid.setExpanded(true);
+                        castAdapter = new CastAdapter(getContext(), castArray, R.layout.grid_layout, nestedScrollView.getWidth());
+                        castGrid.setAdapter(castAdapter);
+                        successCast = true;
                     } catch (Exception exception) {
                         exception.printStackTrace();
                     }
                 }
-                successCast = true;
             } catch (NullPointerException exception) {
                 exception.printStackTrace();
                 castAdapter = new CastAdapter(getContext(), castArray, R.layout.grid_layout, nestedScrollView.getWidth());
+                successCast = true;
             } finally {
                 if (!successCast) {
                     castGrid.setExpanded(true);
@@ -430,6 +445,9 @@ public Runnable extendedInfoChecker = new Runnable() {
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+
+        mContext = getContext();
+
         rootView = inflater.inflate(R.layout.extended_controls, container, false);
         connecting = (TextView) rootView.findViewById(R.id.connecting_extended_controls);
         extendedImage = (ImageView) rootView.findViewById(R.id.image_main_extended);
@@ -574,6 +592,7 @@ public Runnable extendedInfoChecker = new Runnable() {
                         final ViewPager viewPager = (ViewPager) getActivity().findViewById(R.id.remote_page_viewer);
                         switch (item.toString()){
                             case ("Subtitles"):
+                                // TODO find a way to work with the WEBSOCKET & SUBTITLES MENU
                                 final ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), R.layout.list_view, setSubtitleInfoArray());
                                 AlertDialog.Builder builder = new AlertDialog.Builder(getActivity(), R.style.myAlertDialog);
                                 builder.setTitle("Subtitles");
@@ -583,28 +602,55 @@ public Runnable extendedInfoChecker = new Runnable() {
                                         if (adapter.getItem(0).equals("Remove Subtitles")) {
                                             switch (which){
                                                 case 0:
-                                                    ButtonActions.subtitleAction(which - 3);
+                                                    if (Main2Activity.getWebSocketStatus()) {
+                                                        Main2Activity.webSocketEndpoint.startSubtitleAction(which -3);
+                                                    } else {
+                                                        ButtonActions.subtitleAction(which - 3);
+                                                    }
                                                     break;
                                                 case 1:
-                                                    ButtonActions.sync("subtitledelay");
+                                                    if (Main2Activity.getWebSocketStatus()) {
+                                                        Main2Activity.webSocketEndpoint.sync("subtitledelay");
+                                                    } else {
+                                                        ButtonActions.sync("subtitledelay");
+                                                    }
                                                     viewPager.setCurrentItem(1);
                                                     break;
                                                 case 2:
-                                                    ButtonActions.getSubs();
+                                                    if (Main2Activity.getWebSocketStatus()) {
+                                                        Main2Activity.webSocketEndpoint.getSubs();
+                                                        if (!isGettingSubs()){
+                                                            setGettingSubs();
+                                                        }
+                                                    } else {
+                                                        ButtonActions.getSubs();
+                                                    }
                                                     viewPager.setCurrentItem(1);
                                                     break;
                                                 default:
-                                                    ButtonActions.subtitleAction(which - 3);
+                                                    if (Main2Activity.getWebSocketStatus()) {
+                                                        Main2Activity.webSocketEndpoint.startSubtitleAction(which -3);
+                                                    } else {
+                                                        ButtonActions.subtitleAction(which - 3);
+                                                    }
                                                     break;
                                            }
                                         } else  {
                                             switch (which){
                                                 case 0:
-                                                    ButtonActions.getSubs();
+                                                    if (Main2Activity.getWebSocketStatus()) {
+                                                        Main2Activity.webSocketEndpoint.getSubs();
+                                                    } else {
+                                                        ButtonActions.getSubs();
+                                                    }
                                                     viewPager.setCurrentItem(1);
                                                     break;
                                                 default:
-                                                    ButtonActions.subtitleAction(which - 1);
+                                                    if (Main2Activity.getWebSocketStatus()) {
+                                                        Main2Activity.webSocketEndpoint.startSubtitleAction(which -1);
+                                                    } else {
+                                                        ButtonActions.subtitleAction(which - 1);
+                                                    }
                                                     break;
                                             }
                                         }
@@ -622,11 +668,19 @@ public Runnable extendedInfoChecker = new Runnable() {
                                         public void onClick(DialogInterface dialog, int which) {
                                             switch (which) {
                                                 case 0:
-                                                    ButtonActions.sync("audiodelay");
+                                                    if (Main2Activity.getWebSocketStatus()) {
+                                                        Main2Activity.webSocketEndpoint.sync("audiodelay");
+                                                    } else {
+                                                        ButtonActions.sync("audiodelay");
+                                                    }
                                                     viewPager.setCurrentItem(1);
                                                     break;
                                                 case 1:
-                                                    ButtonActions.audiStreamAction(which - 1);
+                                                    if (Main2Activity.getWebSocketStatus()) {
+                                                        Main2Activity.webSocketEndpoint.audiStreamAction(which -1);
+                                                    } else {
+                                                        ButtonActions.audiStreamAction(which - 1);
+                                                    }
                                                     break;
                                             }
                                         }
@@ -796,6 +850,14 @@ public Runnable extendedInfoChecker = new Runnable() {
         videoDetailsNums = new ArrayList<>();
         videoDetailsNums.add(season);
         videoDetailsNums.add(episode);
+    }
+
+    static void setGettingSubs(){
+        gettingSubs = !gettingSubs;
+    }
+
+    static boolean isGettingSubs(){
+        return gettingSubs;
     }
 }
 

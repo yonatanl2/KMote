@@ -741,7 +741,7 @@ class ButtonActions {
     }
 
     static boolean playerInfoGotten() {
-        return (!(playerInfo.isEmpty()) && playerInfo.toArray().length > 0);
+        return (!(playerInfo.isEmpty()) && playerInfo.size() > 0);
     }
 
 
@@ -1072,27 +1072,29 @@ class ButtonActions {
 
         @Override
         public void run() {
-            try {
-                Pattern pattern3 = Pattern.compile("\\d$");
-                Matcher matcher3 = pattern3.matcher(playerInfo.get(0));
+            if (playerInfo.size() > 0) {
+                try {
+                    Pattern pattern3 = Pattern.compile("\\d$");
+                    Matcher matcher3 = pattern3.matcher(playerInfo.get(0));
 
-                if (matcher3.find()) {
-                    JSONObject jsonParam = new JSONObject();
-                    jsonParam.put("jsonrpc", "2.0");
-                    jsonParam.put("method", "Player.SetShuffle");
-                    jsonParam.put("id", 1);
+                    if (matcher3.find()) {
+                        JSONObject jsonParam = new JSONObject();
+                        jsonParam.put("jsonrpc", "2.0");
+                        jsonParam.put("method", "Player.SetShuffle");
+                        jsonParam.put("id", 1);
 
 
-                    JSONObject jsonParam2 = new JSONObject();
-                    jsonParam2.put("playedid", parseInt(matcher3.group()));
-                    jsonParam2.put("shuffle", !isShuffled);
-                    jsonParam.put("params", jsonParam2);
-                    new URL(request + jsonParam).openStream();
+                        JSONObject jsonParam2 = new JSONObject();
+                        jsonParam2.put("playedid", parseInt(matcher3.group()));
+                        jsonParam2.put("shuffle", !isShuffled);
+                        jsonParam.put("params", jsonParam2);
+                        new URL(request + jsonParam).openStream();
 
-                    isShuffled = !isShuffled;
+                        isShuffled = !isShuffled;
+                    }
+                } catch (IOException | JSONException exception) {
+                    exception.printStackTrace();
                 }
-            } catch (IOException | JSONException exception) {
-                exception.printStackTrace();
             }
         }
     }
@@ -1106,27 +1108,28 @@ class ButtonActions {
 
         @Override
         public void run() {
-            try {
-                Pattern pattern3 = Pattern.compile("\\d$");
-                Matcher matcher3 = pattern3.matcher(playerInfo.get(0));
+            if (playerInfo.size() > 0) {
+                try {
+                    Pattern pattern3 = Pattern.compile("\\d$");
+                    Matcher matcher3 = pattern3.matcher(playerInfo.get(0));
+                    if (matcher3.find()) {
+                        JSONObject jsonParam = new JSONObject();
+                        jsonParam.put("jsonrpc", "2.0");
+                        jsonParam.put("method", "Player.SetShuffle");
+                        jsonParam.put("id", 1);
 
-                if (matcher3.find()) {
-                    JSONObject jsonParam = new JSONObject();
-                    jsonParam.put("jsonrpc", "2.0");
-                    jsonParam.put("method", "Player.SetShuffle");
-                    jsonParam.put("id", 1);
 
+                        JSONObject jsonParam2 = new JSONObject();
+                        jsonParam2.put("playedid", parseInt(matcher3.group()));
+                        jsonParam2.put("shuffle", !isRepeat);
+                        jsonParam.put("params", jsonParam2);
+                        new URL(request + jsonParam).openStream();
 
-                    JSONObject jsonParam2 = new JSONObject();
-                    jsonParam2.put("playedid", parseInt(matcher3.group()));
-                    jsonParam2.put("shuffle", !isRepeat);
-                    jsonParam.put("params", jsonParam2);
-                    new URL(request + jsonParam).openStream();
-
-                    isRepeat = !isRepeat;
+                        isRepeat = !isRepeat;
+                    }
+                } catch (IOException | JSONException exception) {
+                    exception.printStackTrace();
                 }
-            } catch (IOException | JSONException exception) {
-                exception.printStackTrace();
             }
         }
     }
@@ -1277,6 +1280,14 @@ class ButtonActions {
 
     static void clearVideoLibrary() {
         new Thread(new ClearVideoLibraryAction()).start();
+    }
+
+    static boolean isIsRepeat(){
+        return isRepeat;
+    }
+
+    static boolean isIsShuffled(){
+        return isShuffled;
     }
 
 }

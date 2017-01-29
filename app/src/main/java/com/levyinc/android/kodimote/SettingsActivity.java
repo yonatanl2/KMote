@@ -441,4 +441,7 @@ public class SettingsActivity extends Fragment {
             }
         }
     }
+
+    //TODO ADD EVENT SERVER SUPPORT
+
 }

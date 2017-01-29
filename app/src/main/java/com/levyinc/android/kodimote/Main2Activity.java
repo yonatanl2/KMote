@@ -8,6 +8,7 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
 import android.view.KeyEvent;
@@ -119,10 +120,14 @@ public class Main2Activity extends Fragment {
                             if (ButtonActions.getStatus()) {
                                 connecting.setText("Connected");
                             } else {
+                                if (connecting.getText() == "Connected"){
+                                    connecting.setText("Connecting...");
+                                }
                                 remoteHandler.postDelayed(statusChecker, 1000);
                             }
                         } else {
                             if (wsActive) {
+                                ButtonActions.connect(sharedPreferences.getString("input_ip", ""), "8080");
                                 connecting.setText("Connected");
                             } else {
                                 boolean success = false;
@@ -138,6 +143,9 @@ public class Main2Activity extends Fragment {
                                 }
                                 if (!success) {
                                     webSocketEndpoint = new WebSocketEndpoint(sharedPreferences.getString("input_ip", ""), sharedPreferences.getString("input_port", ""));
+                                    if (connecting.getText() == "Connected"){
+                                        connecting.setText("Connecting...");
+                                    }
                                     remoteHandler.postDelayed(statusChecker, 3000);
                                 }
                             }
@@ -267,14 +275,22 @@ public class Main2Activity extends Fragment {
         muteButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ButtonActions.muteButton();
+                if (!wsActive) {
+                    ButtonActions.muteButton();
+                } else {
+                    webSocketEndpoint.muteButton();
+                }
             }
         });
 
         getInfoButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ButtonActions.getInfoActino();
+                if (!wsActive) {
+                    ButtonActions.getInfoActino();
+                } else {
+                    webSocketEndpoint.getInfoAction();
+                }
             }
         });
 
@@ -304,14 +320,42 @@ public class Main2Activity extends Fragment {
         setRepeatButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ButtonActions.setIsRepeat();
+                if (!wsActive) {
+                    if (ButtonActions.isIsRepeat() && ButtonActions.playerInfoGotten()){
+                        Snackbar.make(myView, "Playlist Repeat Disabled", Snackbar.LENGTH_SHORT).show();
+                    } else if (ButtonActions.playerInfoGotten()) {
+                        Snackbar.make(myView, "Playlist Repeat Enabled", Snackbar.LENGTH_SHORT).show();
+                    }
+                    ButtonActions.setIsRepeat();
+                } else {
+                    if (webSocketEndpoint.isIsRepeat() && webSocketEndpoint.playerInfoGotten()){
+                        Snackbar.make(myView, "Playlist Shuffle Disabled", Snackbar.LENGTH_SHORT).show();
+                    } else if (webSocketEndpoint.playerInfoGotten()) {
+                        Snackbar.make(myView, "Playlist Shuffle Enabled", Snackbar.LENGTH_SHORT).show();
+                    }
+                    webSocketEndpoint.setIsRepeat();
+                }
             }
         });
 
         setShuffleButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ButtonActions.setIsShuffled();
+                if (!wsActive) {
+                    if (ButtonActions.isIsShuffled() && ButtonActions.playerInfoGotten()){
+                        Snackbar.make(myView, "Playlist Shuffle Disabled", Snackbar.LENGTH_SHORT).show();
+                    } else if (ButtonActions.playerInfoGotten()) {
+                        Snackbar.make(myView, "Playlist Shuffle Enabled", Snackbar.LENGTH_SHORT).show();
+                    }
+                    ButtonActions.setIsShuffled();
+                } else {
+                    if (webSocketEndpoint.isIsShuffled() && webSocketEndpoint.playerInfoGotten()){
+                        Snackbar.make(myView, "Playlist Shuffle Disabled", Snackbar.LENGTH_SHORT).show();
+                    } else if (webSocketEndpoint.playerInfoGotten()) {
+                        Snackbar.make(myView, "Playlist Shuffle Enabled", Snackbar.LENGTH_SHORT).show();
+                    }
+                    webSocketEndpoint.setIsShuffled();
+                }
             }
         });
 
@@ -331,7 +375,11 @@ public class Main2Activity extends Fragment {
                 sendButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        ButtonActions.setText(textToSend.getText().toString());
+                        if (!wsActive) {
+                            ButtonActions.setText(textToSend.getText().toString());
+                        } else {
+                            webSocketEndpoint.setText(textToSend.getText().toString());
+                        }
                         alertDialog.dismiss();
                     }
                 });
@@ -383,7 +431,11 @@ public class Main2Activity extends Fragment {
                     @Override
                     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                         if (fromUser) {
-                            ButtonActions.volumePercentageSetter(progress);
+                            if (!wsActive) {
+                                ButtonActions.volumePercentageSetter(progress);
+                            } else {
+                                webSocketEndpoint.volumePercentageSetter(progress);
+                            }
                         }
                     }
 
@@ -587,7 +639,11 @@ public class Main2Activity extends Fragment {
         select.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-                ButtonActions.pressContextMenu();
+                if (!wsActive) {
+                    ButtonActions.pressContextMenu();
+                } else {
+                    webSocketEndpoint.pressContextMenu();
+                }
                 return true;
             }
         });
@@ -643,8 +699,9 @@ public class Main2Activity extends Fragment {
     @Override
     public void onPause() {
         super.onPause();
-        if (wsActive){
+        if (wsActive) {
             webSocketEndpoint.disconnect();
+            wsActive = !wsActive;
         }
         remoteHandler.removeCallbacksAndMessages(null);
         ButtonActions.stopAsynchTask();
@@ -655,6 +712,8 @@ public class Main2Activity extends Fragment {
         super.onDetach();
         if (wsActive){
             webSocketEndpoint.disconnect();
+            wsActive = !wsActive;
+
         }
         remoteHandler.removeCallbacksAndMessages(null);
         ButtonActions.stopAsynchTask();
@@ -666,6 +725,7 @@ public class Main2Activity extends Fragment {
         super.onStop();
         if (wsActive){
             webSocketEndpoint.disconnect();
+            wsActive = !wsActive;
         }
         remoteHandler.removeCallbacksAndMessages(null);
         ButtonActions.stopAsynchTask();

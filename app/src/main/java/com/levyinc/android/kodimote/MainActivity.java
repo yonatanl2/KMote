@@ -24,10 +24,18 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
-            ButtonActions.volumeAction("volumedown");
+            if (Main2Activity.getWebSocketStatus()) {
+                Main2Activity.webSocketEndpoint.volumeAction("volumedown");
+            } else {
+                ButtonActions.volumeAction("volumedown");
+            }
             return true;
         } else if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
-            ButtonActions.volumeAction("volumeup");
+            if (Main2Activity.getWebSocketStatus()) {
+                Main2Activity.webSocketEndpoint.volumeAction("volumeup");
+            } else {
+                ButtonActions.volumeAction("volumeup");
+            }
             return true;
         } else {
             System.out.println(keyCode + "event" + event + event.getKeyCharacterMap());
@@ -156,13 +164,25 @@ public class MainActivity extends AppCompatActivity {
                 }
                 break;
             case(R.id.fullscreen):
-                ButtonActions.toggleFullScreen();
+                if (Main2Activity.getWebSocketStatus()) {
+                    Main2Activity.webSocketEndpoint.toggleFullScreen();
+                } else {
+                    ButtonActions.toggleFullScreen();
+                }
                 break;
             case(R.id.clear_audio):
-                ButtonActions.clearAudioLibrary();
+                if (Main2Activity.getWebSocketStatus()) {
+                    Main2Activity.webSocketEndpoint.clearAudioLibrary();
+                } else {
+                    ButtonActions.clearAudioLibrary();
+                }
                 break;
             case(R.id.clear_video):
-                ButtonActions.clearVideoLibrary();
+                if (Main2Activity.getWebSocketStatus()) {
+                    Main2Activity.webSocketEndpoint.clearVideoLibrary();
+                } else {
+                    ButtonActions.clearVideoLibrary();
+                }
                 break;
         }
 

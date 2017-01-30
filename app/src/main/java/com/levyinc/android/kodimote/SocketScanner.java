@@ -34,7 +34,7 @@ public class SocketScanner {
         this.sharedPreferences = sharedPreferences;
     }
 
-    public void scan(ScannerHandler handler) {
+    void scan(ScannerHandler handler) {
         try {
             String tempString = null;
             List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());

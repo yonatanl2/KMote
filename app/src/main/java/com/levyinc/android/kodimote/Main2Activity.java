@@ -126,8 +126,8 @@ public class Main2Activity extends Fragment {
                                 remoteHandler.postDelayed(statusChecker, 1000);
                             }
                         } else {
+                            ButtonActions.connect(sharedPreferences.getString("input_ip", ""), "8080");
                             if (wsActive) {
-                                ButtonActions.connect(sharedPreferences.getString("input_ip", ""), "8080");
                                 connecting.setText("Connected");
                             } else {
                                 boolean success = false;
@@ -738,6 +738,10 @@ public class Main2Activity extends Fragment {
 
     static void setWsActive() {
         wsActive = false;
+    }
+
+    static void setWsInactive(){
+        wsActive = true;
     }
 }
 

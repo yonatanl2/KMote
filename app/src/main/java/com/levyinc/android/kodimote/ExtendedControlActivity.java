@@ -64,7 +64,6 @@ public class ExtendedControlActivity extends Fragment {
     private ArrayList<String> currentContent = null;
     static long elaspedTime;
     static long contentTime;
-    private static boolean gettingSubs;
     private long currentElaspedTime;
     static private Handler extendedHandler = new Handler();
     private Lock lock = new ReentrantLock();
@@ -72,7 +71,7 @@ public class ExtendedControlActivity extends Fragment {
     private double setScore;
     private boolean visibility;
     private boolean successCast;
-    private Thread imageThread;
+    Thread imageThread;
 
 
     private static ArrayList<ArrayList<String>> subtitleInfo = new ArrayList<>();
@@ -186,7 +185,7 @@ public Runnable extendedInfoChecker = new Runnable() {
                         }
 
                         if (elaspedTime == 0 || !progressRunner) {
-                            extendedHandler.post(progressSetter);
+                            progressSetter.run();
                         }
 
                         if (ButtonActions.isPaused()) {
@@ -248,7 +247,7 @@ public Runnable extendedInfoChecker = new Runnable() {
                     }
 
                     if (elaspedTime == 0 || !progressRunner) {
-                        extendedHandler.post(progressSetter);
+                        progressSetter.run();
                     }
                     if (Main2Activity.getWebSocketStatus()) {
                         if (Main2Activity.webSocketEndpoint.pauseStatus()) {
@@ -369,7 +368,7 @@ public Runnable extendedInfoChecker = new Runnable() {
             }
         }
     };
-
+//TODO work again on the progress setter, might need to revamp
     private Thread progressSetter = new Thread(new Runnable() {
         @Override
         public void run() {
@@ -385,19 +384,14 @@ public Runnable extendedInfoChecker = new Runnable() {
                 }
             }
             if (!(TimeUnit.SECONDS.toSeconds(currentElaspedTime) >= TimeUnit.SECONDS.toSeconds(contentTime))) {
-                if (Main2Activity.getWebSocketStatus()) {
-                    if ((TimeUnit.SECONDS.toSeconds(currentElaspedTime) >= TimeUnit.SECONDS.toSeconds((int) (elaspedTime)) && !Main2Activity.webSocketEndpoint.pauseStatus()) && (!(TimeUnit.SECONDS.toSeconds(currentElaspedTime) > TimeUnit.SECONDS.toSeconds((int) (elaspedTime) + 1500)))) {
-                        currentElaspedTime = currentElaspedTime + 1000;
-                    } else {
-                        currentElaspedTime = elaspedTime;
-                    }
+                if (((TimeUnit.SECONDS.toSeconds(currentElaspedTime) > TimeUnit.SECONDS.toSeconds((int) (elaspedTime)) && (TimeUnit.SECONDS.toSeconds(currentElaspedTime) < TimeUnit.SECONDS.toSeconds((int) (elaspedTime)) + 1001))
+                        && (!ButtonActions.isPaused() || !Main2Activity.webSocketEndpoint.pauseStatus())) &&
+                        (!(TimeUnit.SECONDS.toSeconds(currentElaspedTime) > TimeUnit.SECONDS.toSeconds((int) (elaspedTime) + 1500)))){
+                    currentElaspedTime += 1000;
                 } else {
-                    if ((TimeUnit.SECONDS.toSeconds(currentElaspedTime) >= TimeUnit.SECONDS.toSeconds((int) (elaspedTime)) && !ButtonActions.isPaused())&& (!(TimeUnit.SECONDS.toSeconds(currentElaspedTime) > TimeUnit.SECONDS.toSeconds((int) (elaspedTime) + 1500)))) {
-                        currentElaspedTime = currentElaspedTime + 1000;
-                    } else {
-                        currentElaspedTime = elaspedTime;
-                    }
+                    currentElaspedTime = elaspedTime;
                 }
+
                 seekBar.setProgress((int) currentElaspedTime);
 
                 if (TimeUnit.MILLISECONDS.toHours(contentTime) == 0) {
@@ -410,22 +404,27 @@ public Runnable extendedInfoChecker = new Runnable() {
                     currentElaspedTime = 0;
                     visibilityChanger(true);
                 }
-
+                try {
+                    wait(999);
+                } catch (InterruptedException exception){
+                    exception.printStackTrace();
+                }
                 lock.unlock();
                 if (Main2Activity.getWebSocketStatus()) {
                     if (Main2Activity.webSocketEndpoint.pauseStatus() || !Main2Activity.webSocketEndpoint.playerInfoGotten() || !progressRunner) {
                         progressRunner = false;
                     } else {
-                        extendedHandler.postDelayed(progressSetter, 1000);
+                        progressSetter.run();
                     }
                 } else {
                     if (ButtonActions.isPaused() || !ButtonActions.playerInfoGotten() || !progressRunner) {
                         progressRunner = false;
                     } else {
-                        extendedHandler.postDelayed(progressSetter, 1000);
+                        progressSetter.run();
                     }
                 }
             }
+
         }
     });
 
@@ -483,7 +482,7 @@ public Runnable extendedInfoChecker = new Runnable() {
             @Override
             public void onClick(View view){
                 if (ButtonActions.isPaused() && !progressRunner){
-                    extendedHandler.postDelayed(progressSetter, 300);
+                    progressSetter.run();
                 }
                 if (Main2Activity.getWebSocketStatus()) {
                     Main2Activity.webSocketEndpoint.startPlayPause();
@@ -592,7 +591,6 @@ public Runnable extendedInfoChecker = new Runnable() {
                         final ViewPager viewPager = (ViewPager) getActivity().findViewById(R.id.remote_page_viewer);
                         switch (item.toString()){
                             case ("Subtitles"):
-                                // TODO find a way to work with the WEBSOCKET & SUBTITLES MENU
                                 final ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), R.layout.list_view, setSubtitleInfoArray());
                                 AlertDialog.Builder builder = new AlertDialog.Builder(getActivity(), R.style.myAlertDialog);
                                 builder.setTitle("Subtitles");
@@ -619,9 +617,8 @@ public Runnable extendedInfoChecker = new Runnable() {
                                                 case 2:
                                                     if (Main2Activity.getWebSocketStatus()) {
                                                         Main2Activity.webSocketEndpoint.getSubs();
-                                                        if (!isGettingSubs()){
-                                                            setGettingSubs();
-                                                        }
+                                                        Main2Activity.setWsActive();
+
                                                     } else {
                                                         ButtonActions.getSubs();
                                                     }
@@ -850,14 +847,6 @@ public Runnable extendedInfoChecker = new Runnable() {
         videoDetailsNums = new ArrayList<>();
         videoDetailsNums.add(season);
         videoDetailsNums.add(episode);
-    }
-
-    static void setGettingSubs(){
-        gettingSubs = !gettingSubs;
-    }
-
-    static boolean isGettingSubs(){
-        return gettingSubs;
     }
 }
 

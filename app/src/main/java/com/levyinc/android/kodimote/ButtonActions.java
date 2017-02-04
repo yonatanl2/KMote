@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 
 import static java.lang.Integer.parseInt;
 
+enum Type {AUDIO, VIDEO, PICTURE}
 
 class ButtonActions {
 
@@ -40,6 +41,7 @@ class ButtonActions {
     private static boolean isRepeat;
     private static AsynchInfoChecker infoChecker = new AsynchInfoChecker();
     private static Lock lock = new ReentrantLock();
+    private static Type type;
 
     static boolean getStatus() {
         return status;
@@ -377,11 +379,24 @@ class ButtonActions {
                     playerInfo = new ArrayList<>();
                 }
                 Pattern pattern2 = Pattern.compile("\"type\":\"(\\D*)\"");
-                Matcher matcher2 = pattern2.matcher((jsonString));
+                Matcher matcher2 = pattern2.matcher(jsonString);
                 if (matcher2.find()) {
-                    playerInfo.add(1, matcher2.group());
+                    Pattern pattern3 = Pattern.compile("(?<=:).*");
+                    Matcher matcher3 = pattern3.matcher(matcher2.group());
+                    if (matcher3.find()) {
+                        String typeMatch = matcher3.group().replaceAll("\"", "");
+                        playerInfo.add(1, typeMatch);
+                        if (playerInfo.get(1).equals("video")) {
+                            type = Type.VIDEO;
+                        } else if (playerInfo.get(1).equals("audio")) {
+                            type = Type.AUDIO;
+                        } else if (playerInfo.get(1).equals("picture")) {
+                            type = Type.PICTURE;
+                        }
+                    }
                 } else {
                     playerInfo = new ArrayList<>();
+                    type = null;
                 }
                 br.close();
 
@@ -677,6 +692,62 @@ class ButtonActions {
                                             }
                                         }
                                     }
+
+                                        if (type != null) {
+                                            jsonParam = new JSONObject();
+                                            jsonParam.put("jsonrpc", "2.0");
+                                            jsonParam.put("method", "Playlist.GetItems");
+                                            jsonParam.put("id", 1);
+                                            jsonParam2 = new JSONObject();
+                                            jsonParam2.put("playlistid", type.ordinal());
+                                            properties = "[title\", \"showtitle\", \"season\", \"episode\",\"album\",\"artist\",\"duration]";
+                                            jsonParam2.put("properties", properties);
+                                            jsonParam.put("params", jsonParam2);
+
+                                            jsonParamString = (jsonParam.toString().replaceAll("\"\\[", "[\""));
+                                            jsonParamString = (jsonParamString.replaceAll("\\]\"", "\"]"));
+                                            jsonParamString = (jsonParamString.replaceAll("\\\\", ""));
+                                            System.out.println(jsonParamString);
+                                            query = URLEncoder.encode(jsonParamString, "UTF-8");
+
+                                            inputStream = new URL(request + query).openStream();
+
+                                            br = new BufferedReader(new InputStreamReader(inputStream));
+                                            jsonString = new StringBuffer();
+                                            while ((line = br.readLine()) != null) {
+                                                jsonString.append(line);
+                                            }
+                                            System.out.println("PLAYLIST\n\n");
+                                            Pattern playlistPattern = Pattern.compile("\\[\\{\\\"album.*(?<=\\\"episode\\\"\\}\\])");
+                                            Matcher playlistMatcher = playlistPattern.matcher(jsonString);
+                                            ArrayList<JSONObject> playlistArray = new ArrayList<>();
+                                            while (playlistMatcher.find()){
+                                                JSONObject JSONElement = new JSONObject();
+                                                Pattern typePattern = Pattern.compile("(?<=\"type\":\")\\w*");
+                                                Matcher typeMatcher = typePattern.matcher(playlistMatcher.group());
+                                                if (typeMatcher.find()){
+                                                    JSONElement.put("type", typeMatcher.group());
+                                                }
+                                                Pattern showPattern = Pattern.compile("(?<=showtitle\":\").*(?=\",\"stream)");
+                                                Matcher showMatcher = showPattern.matcher(playlistMatcher.group());
+                                                if (showMatcher.find()){
+                                                    JSONElement.put("Showtitle", showMatcher.group());
+                                                }
+                                                Pattern seasonPattern = Pattern.compile("(?<=season\":)\\d*");
+                                                Matcher seasonMatcher = seasonPattern.matcher(playlistMatcher.group());
+                                                if (seasonMatcher.find()){
+                                                    JSONElement.put("season", seasonMatcher.group());
+                                                }
+                                                Pattern episodePattern = Pattern.compile("(?<=episode\":)\\d*");
+                                                Matcher episodeMatcher = episodePattern.matcher(playlistMatcher.group());
+                                                if (episodeMatcher.find()){
+                                                    JSONElement.put("episode", episodeMatcher.group());
+                                                }
+                                            }
+                                            PlaylistActivity.setPlaylist(playlistArray);
+                                            System.out.println(playlistArray);
+                                            br.close();
+                                            }
                                 } catch (IOException | JSONException exception) {
                                     exception.printStackTrace();
                                 }

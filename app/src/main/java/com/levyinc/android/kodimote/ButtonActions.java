@@ -707,7 +707,6 @@ class ButtonActions {
                                             jsonParamString = (jsonParam.toString().replaceAll("\"\\[", "[\""));
                                             jsonParamString = (jsonParamString.replaceAll("\\]\"", "\"]"));
                                             jsonParamString = (jsonParamString.replaceAll("\\\\", ""));
-                                            System.out.println(jsonParamString);
                                             query = URLEncoder.encode(jsonParamString, "UTF-8");
 
                                             inputStream = new URL(request + query).openStream();
@@ -718,6 +717,8 @@ class ButtonActions {
                                                 jsonString.append(line);
                                             }
                                             System.out.println("PLAYLIST\n\n");
+                                            System.out.println(jsonString);
+
                                             Pattern playlistPattern = Pattern.compile("\\[\\{\\\"album.*(?<=\\\"episode\\\"\\}\\])");
                                             Matcher playlistMatcher = playlistPattern.matcher(jsonString);
                                             ArrayList<JSONObject> playlistArray = new ArrayList<>();
@@ -728,10 +729,10 @@ class ButtonActions {
                                                 if (typeMatcher.find()){
                                                     JSONElement.put("type", typeMatcher.group());
                                                 }
-                                                Pattern showPattern = Pattern.compile("(?<=showtitle\":\").*(?=\",\"stream)");
+                                                Pattern showPattern = Pattern.compile("(?<=\"title\":\").*?(?=\",\"type)");
                                                 Matcher showMatcher = showPattern.matcher(playlistMatcher.group());
                                                 if (showMatcher.find()){
-                                                    JSONElement.put("Showtitle", showMatcher.group());
+                                                    JSONElement.put("showtitle", showMatcher.group());
                                                 }
                                                 Pattern seasonPattern = Pattern.compile("(?<=season\":)\\d*");
                                                 Matcher seasonMatcher = seasonPattern.matcher(playlistMatcher.group());
@@ -743,6 +744,7 @@ class ButtonActions {
                                                 if (episodeMatcher.find()){
                                                     JSONElement.put("episode", episodeMatcher.group());
                                                 }
+                                                playlistArray.add(JSONElement);
                                             }
                                             PlaylistActivity.setPlaylist(playlistArray);
                                             System.out.println(playlistArray);

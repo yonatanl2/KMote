@@ -14,7 +14,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
+import java.net.SocketException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
@@ -361,8 +363,9 @@ class ButtonActions {
                 jsonParam.put("jsonrpc", "2.0");
                 jsonParam.put("method", "Player.GetActivePlayers");
                 jsonParam.put("id", 1);
-
-                InputStream inputStream = new URL(request + jsonParam).openStream();
+                URLConnection conn = new URL(request + jsonParam).openConnection();
+                conn.setReadTimeout(1500);
+                InputStream inputStream = conn.getInputStream();
 
                 BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
                 StringBuffer jsonString = new StringBuffer();
@@ -422,8 +425,11 @@ class ButtonActions {
                         jsonParamString = jsonParamString.replaceAll("\\\\", "");
                         String query = URLEncoder.encode(jsonParamString, "UTF-8");
 
-                        inputStream = new URL(request + query).openStream();
+                        conn = new URL(request + query).openConnection();
+                        conn.setReadTimeout(1500);
+                        inputStream = conn.getInputStream();
                         br = new BufferedReader(new InputStreamReader(inputStream));
+
                         jsonString = new StringBuffer();
                         while ((line = br.readLine()) != null) {
                             jsonString.append(line);
@@ -560,7 +566,9 @@ class ButtonActions {
                                             jsonParamString = (jsonParamString.replaceAll("\\\\",""));
                                             query = URLEncoder.encode(jsonParamString, "UTF-8");
 
-                                            inputStream = new URL(request + query).openStream();
+                                            conn = new URL(request + query).openConnection();
+                                            conn.setReadTimeout(1500);
+                                            inputStream = conn.getInputStream();
 
                                             br = new BufferedReader(new InputStreamReader(inputStream));
                                             jsonString = new StringBuffer();
@@ -613,7 +621,10 @@ class ButtonActions {
                                                         try {
                                                             ExtendedControlActivity.setBitmapArrayListEmpty();
                                                             URL url = new URL(URLDecoder.decode(seriesMatch.group(), "UTF-8"));
-                                                            Bitmap decodedImage = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+
+                                                            conn = url.openConnection();
+                                                            conn.setReadTimeout(3500);
+                                                            Bitmap decodedImage = BitmapFactory.decodeStream(conn.getInputStream());
                                                             ExtendedControlActivity.addBitmapArrayListItem(decodedImage);
                                                             ExtendedControlActivity.addBitmapArrayListItem(null);
                                                         } catch (IOException exception) {
@@ -625,7 +636,10 @@ class ButtonActions {
                                                             ExtendedControlActivity.setBitmapArrayListEmpty();
                                                             ExtendedControlActivity.addBitmapArrayListItem(null);
                                                             URL url = new URL(URLDecoder.decode(imageMatcher.group(), "UTF-8"));
-                                                            Bitmap decodedImage2 = BitmapFactory.decodeStream(url.openStream());
+
+                                                            conn = url.openConnection();
+                                                            conn.setReadTimeout(3500);
+                                                            Bitmap decodedImage2 = BitmapFactory.decodeStream(conn.getInputStream());
                                                             ExtendedControlActivity.addBitmapArrayListItem(decodedImage2);
                                                         } catch (IOException exception) {
                                                             exception.printStackTrace();
@@ -709,16 +723,15 @@ class ButtonActions {
                                             jsonParamString = (jsonParamString.replaceAll("\\\\", ""));
                                             query = URLEncoder.encode(jsonParamString, "UTF-8");
 
-                                            inputStream = new URL(request + query).openStream();
+                                            conn = new URL(request + query).openConnection();
+                                            conn.setReadTimeout(1500);
+                                            inputStream = conn.getInputStream();
 
                                             br = new BufferedReader(new InputStreamReader(inputStream));
                                             jsonString = new StringBuffer();
                                             while ((line = br.readLine()) != null) {
                                                 jsonString.append(line);
                                             }
-                                            System.out.println("PLAYLIST\n\n");
-                                            System.out.println(jsonString);
-
                                             Pattern playlistPattern = Pattern.compile("\\[\\{\\\"album.*(?<=\\\"episode\\\"\\}\\])");
                                             Matcher playlistMatcher = playlistPattern.matcher(jsonString);
                                             ArrayList<JSONObject> playlistArray = new ArrayList<>();
@@ -747,7 +760,6 @@ class ButtonActions {
                                                 playlistArray.add(JSONElement);
                                             }
                                             PlaylistActivity.setPlaylist(playlistArray);
-                                            System.out.println(playlistArray);
                                             br.close();
                                             }
                                 } catch (IOException | JSONException exception) {
@@ -755,7 +767,6 @@ class ButtonActions {
                                 }
                             } else {
                                 Log.println(Log.DEBUG, "Response", "none");
-                                Log.println(Log.DEBUG, "Response", playerInfo.toArray().toString());
                             }
                         }
                     }
@@ -766,6 +777,9 @@ class ButtonActions {
             } catch (ConnectException connectionRefused) {
                 Log.i("Info Checker", "Connection terminated");
                 playerInfo = new ArrayList<>();
+            } catch (SocketException exception) {
+                Log.w("WIFI", "Wifi not connected", exception);
+                cancel(true);
             } catch (IOException | JSONException exception) {
                 exception.printStackTrace();
             }

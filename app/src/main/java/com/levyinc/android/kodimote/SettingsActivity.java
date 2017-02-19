@@ -241,7 +241,7 @@ public class SettingsActivity extends Fragment {
         }
     };
 
-    public class AsyncScan extends AsyncTask<Void, Void, Boolean> {
+    class AsyncScan extends AsyncTask<Void, Void, Boolean> {
 
         View currentView;
         ProgressDialog progressDialog;

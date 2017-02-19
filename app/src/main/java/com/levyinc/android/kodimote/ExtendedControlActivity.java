@@ -64,10 +64,16 @@ public class ExtendedControlActivity extends Fragment {
     private ArrayList<String> currentContent = null;
     static long elaspedTime;
     static long contentTime;
-    private long currentElaspedTime;
-    static private Handler extendedHandler = new Handler();
-    private Lock lock = new ReentrantLock();
-    private boolean progressRunner;
+    private ProgressSetter progressSetter = new ProgressSetter();
+    final Thread progressThread = new Thread(new Runnable() {
+        @Override
+        public void run() {
+            progressSetter.run();
+        }
+    });
+    private ProgressHandler extendedHandler;
+
+    //TODO remove all progressRunners booleans
     private double setScore;
     private boolean visibility;
     private boolean successCast;
@@ -126,38 +132,40 @@ public class ExtendedControlActivity extends Fragment {
 
     public void castGrid() {
         if (castArray != null) {
-            if (getContext() != null) {
+            if (mContext == null) {
                 mContext = getContext();
             }
-            try {
-                if (castAdapter == null){
-                    try {
-                        castGrid.setExpanded(true);
-                        castAdapter = new CastAdapter(getContext(), castArray, R.layout.grid_layout, nestedScrollView.getWidth());
-                        castGrid.setAdapter(castAdapter);
-                        successCast = true;
-                    } catch (Exception exception) {
-                        exception.printStackTrace();
+            if (mContext != null) {
+                try {
+                    if (castAdapter == null){
+                        try {
+                            castGrid.setExpanded(true);
+                            castAdapter = new CastAdapter(getContext(), castArray, R.layout.grid_layout, nestedScrollView.getWidth());
+                            castGrid.setAdapter(castAdapter);
+                            successCast = true;
+                        } catch (Exception exception) {
+                            exception.printStackTrace();
+                        }
+                    } else if (castArray != ((CastAdapter) castGrid.getAdapter()).getArrayList()) {
+                        try {
+                            castGrid.setExpanded(true);
+                            castAdapter = new CastAdapter(getContext(), castArray, R.layout.grid_layout, nestedScrollView.getWidth());
+                            castGrid.setAdapter(castAdapter);
+                            successCast = true;
+                        } catch (Exception exception) {
+                            exception.printStackTrace();
+                        }
                     }
-                } else if (castArray != ((CastAdapter) castGrid.getAdapter()).getArrayList()) {
-                    try {
-                        castGrid.setExpanded(true);
-                        castAdapter = new CastAdapter(getContext(), castArray, R.layout.grid_layout, nestedScrollView.getWidth());
-                        castGrid.setAdapter(castAdapter);
-                        successCast = true;
-                    } catch (Exception exception) {
-                        exception.printStackTrace();
-                    }
-                }
-            } catch (NullPointerException exception) {
-                exception.printStackTrace();
-                castAdapter = new CastAdapter(getContext(), castArray, R.layout.grid_layout, nestedScrollView.getWidth());
-                successCast = true;
-            } finally {
-                if (!successCast) {
-                    castGrid.setExpanded(true);
-                    castGrid.setAdapter(new CastAdapter(getContext(), castArray, R.layout.grid_layout, nestedScrollView.getWidth()));
+                } catch (NullPointerException exception) {
+                    exception.printStackTrace();
+                    castAdapter = new CastAdapter(getContext(), castArray, R.layout.grid_layout, nestedScrollView.getWidth());
                     successCast = true;
+                } finally {
+                    if (!successCast) {
+                        castGrid.setExpanded(true);
+                        castGrid.setAdapter(new CastAdapter(getContext(), castArray, R.layout.grid_layout, nestedScrollView.getWidth()));
+                        successCast = true;
+                    }
                 }
             }
         }
@@ -184,8 +192,8 @@ public Runnable extendedInfoChecker = new Runnable() {
                             visibilityChanger(false);
                         }
 
-                        if (elaspedTime == 0 || !progressRunner) {
-                            progressSetter.run();
+                        if (!progressThread.isAlive()) {
+                            progressThread.start();
                         }
 
                         if (ButtonActions.isPaused()) {
@@ -246,8 +254,8 @@ public Runnable extendedInfoChecker = new Runnable() {
                         visibilityChanger(false);
                     }
 
-                    if (elaspedTime == 0 || !progressRunner) {
-                        progressSetter.run();
+                    if (!progressThread.isAlive()) {
+                        progressThread.start();
                     }
                     if (Main2Activity.getWebSocketStatus()) {
                         if (Main2Activity.webSocketEndpoint.pauseStatus()) {
@@ -369,7 +377,7 @@ public Runnable extendedInfoChecker = new Runnable() {
         }
     };
 //TODO work again on the progress setter, might need to revamp
-    private Thread progressSetter = new Thread(new Runnable() {
+  /*  private Thread progressSetter = new Thread(new Runnable() {
         @Override
         public void run() {
             lock.lock();
@@ -426,7 +434,7 @@ public Runnable extendedInfoChecker = new Runnable() {
             }
 
         }
-    });
+    });*/
 
 
 
@@ -468,7 +476,6 @@ public Runnable extendedInfoChecker = new Runnable() {
 
         sharedPreferences = getActivity().getSharedPreferences("connection_info", Context.MODE_PRIVATE);
 
-        extendedHandler.post(scalingThread);
         visibilityChanger(true);
         connecting.setText("No device connected");
 
@@ -481,8 +488,8 @@ public Runnable extendedInfoChecker = new Runnable() {
         playPause.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view){
-                if (ButtonActions.isPaused() && !progressRunner){
-                    progressSetter.run();
+                if (ButtonActions.isPaused() && !progressThread.isAlive()){
+                    progressThread.start();
                 }
                 if (Main2Activity.getWebSocketStatus()) {
                     Main2Activity.webSocketEndpoint.startPlayPause();
@@ -541,7 +548,9 @@ public Runnable extendedInfoChecker = new Runnable() {
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
+        extendedHandler = new ProgressHandler(seekBar, currentProgress, totalTime, progressThread, progressSetter);
+        progressSetter.setProgressHandler(extendedHandler);
+        extendedHandler.post(scalingThread);
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -711,8 +720,7 @@ public Runnable extendedInfoChecker = new Runnable() {
     public void onPause() {
         super.onPause();
         extendedHandler.removeCallbacks(null);
-        progressRunner = false;
-        progressSetter.interrupt();
+        progressThread.interrupt();
         elaspedTime = 0;
     }
 
@@ -722,8 +730,7 @@ public Runnable extendedInfoChecker = new Runnable() {
     public void onStop() {
         super.onStop();
         extendedHandler.removeCallbacks(null);
-        progressRunner = false;
-        progressSetter.interrupt();
+        progressThread.interrupt();
         elaspedTime = 0;
 
     }
@@ -847,6 +854,14 @@ public Runnable extendedInfoChecker = new Runnable() {
         videoDetailsNums = new ArrayList<>();
         videoDetailsNums.add(season);
         videoDetailsNums.add(episode);
+    }
+
+    static long getElaspedTime(){
+        return elaspedTime;
+    }
+
+    static long getContentTime(){
+        return contentTime;
     }
 }
 

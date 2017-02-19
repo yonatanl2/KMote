@@ -51,22 +51,24 @@ private static ArrayList<JSONObject> playlistArray;
                             if (!connectedText.getText().toString().equals("Connected")){
                                 connectedText.setText("Connected");
                             }
-                            if (playlistArray.size() > 0 && playlistArray != currentlySetArray) {
-                                ArrayList<PlaylistArrayObject> objectArrayList = new ArrayList<>();
-                                for (int i = 0; i < playlistArray.size(); i++) {
-                                    JSONObject tempJSON = playlistArray.get(i);
-                                    int[] nums = new int[2];
-                                    nums[0] = tempJSON.getInt("season");
-                                    nums[1] = tempJSON.getInt("episode");
-                                    PlaylistArrayObject object = new PlaylistArrayObject(tempJSON.getString("showtitle"), nums);
-                                    objectArrayList.add(object);
+                            if (playlistArray != null) {
+                                if (playlistArray.size() > 0 && playlistArray != currentlySetArray) {
+                                    ArrayList<PlaylistArrayObject> objectArrayList = new ArrayList<>();
+                                    for (int i = 0; i < playlistArray.size(); i++) {
+                                        JSONObject tempJSON = playlistArray.get(i);
+                                        int[] nums = new int[2];
+                                        nums[0] = tempJSON.getInt("season");
+                                        nums[1] = tempJSON.getInt("episode");
+                                        PlaylistArrayObject object = new PlaylistArrayObject(tempJSON.getString("showtitle"), nums);
+                                        objectArrayList.add(object);
+                                    }
+                                    PlaylistArrayAdapter playlistArrayAdapter = new PlaylistArrayAdapter(getContext(), objectArrayList, R.layout.playlist_items);
+                                    listView.setAdapter(playlistArrayAdapter);
+                                    connectedText.setVisibility(View.INVISIBLE);
+                                    currentlySetArray = playlistArray;
+                                } else if (playlistArray != currentlySetArray) {
+                                    currentlySetArray = playlistArray;
                                 }
-                                PlaylistArrayAdapter playlistArrayAdapter = new PlaylistArrayAdapter(getContext(), objectArrayList, R.layout.playlist_items);
-                                listView.setAdapter(playlistArrayAdapter);
-                                connectedText.setVisibility(View.INVISIBLE);
-                                currentlySetArray = playlistArray;
-                            } else if (playlistArray != currentlySetArray) {
-                                currentlySetArray = playlistArray;
                             }
                         }
                     }

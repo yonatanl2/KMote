@@ -17,6 +17,7 @@ import android.support.v4.view.ViewPager;
 import android.support.v4.widget.NestedScrollView;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.PopupMenu;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -30,10 +31,14 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import io.reactivex.Observable;
 
 
 public class ExtendedControlActivity extends Fragment {
@@ -64,14 +69,17 @@ public class ExtendedControlActivity extends Fragment {
     private ArrayList<String> currentContent = null;
     static long elaspedTime;
     static long contentTime;
-    private ProgressSetter progressSetter = new ProgressSetter();
+    /*private ProgressSetter progressSetter = new ProgressSetter();
     final Thread progressThread = new Thread(new Runnable() {
         @Override
         public void run() {
             progressSetter.run();
         }
-    });
-    private ProgressHandler extendedHandler;
+    });*/
+    //private ProgressHandler extendedHandler;
+    private Handler extendedHandler = new Handler();
+    private long currentElaspedTime;
+
 
     //TODO remove all progressRunners booleans
     private double setScore;
@@ -192,8 +200,10 @@ public Runnable extendedInfoChecker = new Runnable() {
                             visibilityChanger(false);
                         }
 
-                        if (!progressThread.isAlive()) {
-                            progressThread.start();
+                        if (!progressSetter.isDaemon()) {
+                            Log.i("Progress Log", "Thread Started");
+                            progressSetter.setDaemon(true);
+                            progressSetter.run();
                         }
 
                         if (ButtonActions.isPaused()) {
@@ -254,8 +264,11 @@ public Runnable extendedInfoChecker = new Runnable() {
                         visibilityChanger(false);
                     }
 
-                    if (!progressThread.isAlive()) {
-                        progressThread.start();
+                    if (!progressSetter.isAlive()) {
+                        Log.i("Progress Log", "Thread Started");
+                        progressSetter.setDaemon(true);
+                        progressSetter.run();
+
                     }
                     if (Main2Activity.getWebSocketStatus()) {
                         if (Main2Activity.webSocketEndpoint.pauseStatus()) {
@@ -377,12 +390,15 @@ public Runnable extendedInfoChecker = new Runnable() {
         }
     };
 //TODO work again on the progress setter, might need to revamp
-  /*  private Thread progressSetter = new Thread(new Runnable() {
+    private Thread progressSetter = new Thread(new Runnable() {
         @Override
         public void run() {
-            lock.lock();
-            progressRunner = true;
             DecimalFormat formatter = new DecimalFormat("00");
+            Calendar cal = Calendar.getInstance();
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",
+                    java.util.Locale.getDefault());
+
+            System.out.println("Measuring progress: " + format.format(cal.getTime()));
             if (contentTime > 0) {
                 seekBar.setMax((int) contentTime); 
                 if (TimeUnit.MILLISECONDS.toHours(contentTime) == 0) {
@@ -392,14 +408,13 @@ public Runnable extendedInfoChecker = new Runnable() {
                 }
             }
             if (!(TimeUnit.SECONDS.toSeconds(currentElaspedTime) >= TimeUnit.SECONDS.toSeconds(contentTime))) {
-                if (((TimeUnit.SECONDS.toSeconds(currentElaspedTime) > TimeUnit.SECONDS.toSeconds((int) (elaspedTime)) && (TimeUnit.SECONDS.toSeconds(currentElaspedTime) < TimeUnit.SECONDS.toSeconds((int) (elaspedTime)) + 1001))
-                        && (!ButtonActions.isPaused() || !Main2Activity.webSocketEndpoint.pauseStatus())) &&
-                        (!(TimeUnit.SECONDS.toSeconds(currentElaspedTime) > TimeUnit.SECONDS.toSeconds((int) (elaspedTime) + 1500)))){
+                if (currentElaspedTime >= elaspedTime && currentElaspedTime <= (elaspedTime + 1200) && getPauseStatus()) {
+                    Log.i("Progress Log", ("1:" + String.valueOf(currentElaspedTime) + '_' + String.valueOf(elaspedTime)));
                     currentElaspedTime += 1000;
                 } else {
+                    Log.i("Progress Log", ("2:" + String.valueOf(currentElaspedTime) + '_' + String.valueOf(elaspedTime)));
                     currentElaspedTime = elaspedTime;
                 }
-
                 seekBar.setProgress((int) currentElaspedTime);
 
                 if (TimeUnit.MILLISECONDS.toHours(contentTime) == 0) {
@@ -412,29 +427,19 @@ public Runnable extendedInfoChecker = new Runnable() {
                     currentElaspedTime = 0;
                     visibilityChanger(true);
                 }
-                try {
-                    wait(999);
-                } catch (InterruptedException exception){
-                    exception.printStackTrace();
-                }
-                lock.unlock();
-                if (Main2Activity.getWebSocketStatus()) {
-                    if (Main2Activity.webSocketEndpoint.pauseStatus() || !Main2Activity.webSocketEndpoint.playerInfoGotten() || !progressRunner) {
-                        progressRunner = false;
-                    } else {
+               /* if (Main2Activity.getWebSocketStatus()) {
+                    if (Main2Activity.webSocketEndpoint.pauseStatus() || !Main2Activity.webSocketEndpoint.playerInfoGotten()) {
                         progressSetter.run();
                     }
                 } else {
-                    if (ButtonActions.isPaused() || !ButtonActions.playerInfoGotten() || !progressRunner) {
-                        progressRunner = false;
-                    } else {
+                    if (ButtonActions.isPaused() || !ButtonActions.playerInfoGotten()) {
                         progressSetter.run();
                     }
-                }
+                }*/
             }
-
+            extendedHandler.postDelayed(progressSetter, 1000);
         }
-    });*/
+    });
 
 
 
@@ -488,8 +493,9 @@ public Runnable extendedInfoChecker = new Runnable() {
         playPause.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view){
-                if (ButtonActions.isPaused() && !progressThread.isAlive()){
-                    progressThread.start();
+                if (ButtonActions.isPaused() && !progressSetter.isDaemon()){
+                    progressSetter.setDaemon(true);
+                    progressSetter.run();
                 }
                 if (Main2Activity.getWebSocketStatus()) {
                     Main2Activity.webSocketEndpoint.startPlayPause();
@@ -548,8 +554,8 @@ public Runnable extendedInfoChecker = new Runnable() {
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        extendedHandler = new ProgressHandler(seekBar, currentProgress, totalTime, progressThread, progressSetter);
-        progressSetter.setProgressHandler(extendedHandler);
+        //extendedHandler = new ProgressHandler(seekBar, currentProgress, totalTime, progressThread, progressSetter);
+        //progressSetter.setProgressHandler(extendedHandler);
         extendedHandler.post(scalingThread);
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -720,7 +726,8 @@ public Runnable extendedInfoChecker = new Runnable() {
     public void onPause() {
         super.onPause();
         extendedHandler.removeCallbacks(null);
-        progressThread.interrupt();
+        progressSetter.interrupt();
+        progressSetter.setDaemon(false);
         elaspedTime = 0;
     }
 
@@ -730,7 +737,8 @@ public Runnable extendedInfoChecker = new Runnable() {
     public void onStop() {
         super.onStop();
         extendedHandler.removeCallbacks(null);
-        progressThread.interrupt();
+        progressSetter.interrupt();
+        progressSetter.setDaemon(false);
         elaspedTime = 0;
 
     }
@@ -862,6 +870,14 @@ public Runnable extendedInfoChecker = new Runnable() {
 
     static long getContentTime(){
         return contentTime;
+    }
+
+    boolean getPauseStatus(){
+        if (Main2Activity.getWebSocketStatus()){
+            return !Main2Activity.webSocketEndpoint.pauseStatus();
+        } else {
+            return !ButtonActions.isPaused();
+        }
     }
 }
 

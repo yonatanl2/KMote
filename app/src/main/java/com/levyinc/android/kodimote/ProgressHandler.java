@@ -63,8 +63,6 @@ class ProgressHandler extends Handler {
                     totalTime.setText(formatter.format(TimeUnit.MILLISECONDS.toHours(contentTime)) + ":" + formatter.format(TimeUnit.MILLISECONDS.toMinutes(contentTime) - TimeUnit.MINUTES.toMinutes(TimeUnit.MILLISECONDS.toHours(contentTime))) + ":" + formatter.format(TimeUnit.MILLISECONDS.toSeconds(contentTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(contentTime))));
                 }
             }
-
-
             if (seekBar.getProgress() != (int) currentElaspedTime) {
                 seekBar.setProgress((int) currentElaspedTime);
             }

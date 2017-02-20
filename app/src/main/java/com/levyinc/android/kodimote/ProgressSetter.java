@@ -31,12 +31,14 @@ public class ProgressSetter implements Runnable {
 
             Message progressMessage = new Message();
             if (!(TimeUnit.SECONDS.toSeconds(currentElaspedTime) >= TimeUnit.SECONDS.toSeconds(contentTime))) {
-                if (currentElaspedTime > elaspedTime && currentElaspedTime < (elaspedTime + 1000) && (!ButtonActions.isPaused() || !Main2Activity.webSocketEndpoint.pauseStatus())) {
+                if (currentElaspedTime >= elaspedTime && currentElaspedTime < (elaspedTime + 1000) && getPauseStatus()) {
                     currentElaspedTime += 1000;
                     System.out.println("1");
                 } else {
+                    System.out.println(currentElaspedTime);
+                    System.out.println(elaspedTime);
                     currentElaspedTime = elaspedTime;
-                    System.out.println("2");
+
                 }
 
 
@@ -49,7 +51,7 @@ public class ProgressSetter implements Runnable {
 
                 try {
                     synchronized (this) {
-                        wait(500);
+                        wait(999);
                     }
                 } catch (InterruptedException exception){
                     exception.printStackTrace();
@@ -73,5 +75,13 @@ public class ProgressSetter implements Runnable {
 
     void setProgressHandler(ProgressHandler handler){
         this.progressHandler = handler;
+    }
+
+    boolean getPauseStatus(){
+        if (Main2Activity.getWebSocketStatus()){
+            return !Main2Activity.webSocketEndpoint.pauseStatus();
+        } else {
+            return !ButtonActions.isPaused();
+        }
     }
 }

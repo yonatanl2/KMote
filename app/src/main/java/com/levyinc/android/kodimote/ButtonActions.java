@@ -808,6 +808,8 @@ class ButtonActions {
         if (!infoChecker.isCancelled()){
             Log.d("Info Checker", "Cancellation Failed");
         }
+        Log.d("Info Checker", infoChecker.getStatus().toString());
+
     }
 
         static void getInfo() {

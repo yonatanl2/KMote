@@ -4,6 +4,7 @@
     <color name="colorPrimaryDark">#1565C0</color>
     <color name="colorAccent">#3349FF</color>
     <color name="grey">@android:color/darker_gray</color>
+    <color name="colorHighlight">#64B5F6</color>
 
     <array name="letter_tile_colors">
         <item>#DB4437</item>

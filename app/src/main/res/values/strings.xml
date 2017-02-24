@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">KodiMote</string>
+    <string name="app_name">KMote</string>
     <string name="port">Port</string>
     <string name="input_port">input_port</string>
     <string name="pi_IP">Kodi IP</string>

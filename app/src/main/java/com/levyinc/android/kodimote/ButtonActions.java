@@ -805,6 +805,9 @@ class ButtonActions {
 
     static void stopAsynchTask() {
         infoChecker.cancel(true);
+        if (!infoChecker.isCancelled()){
+            Log.d("Info Checker", "Cancellation Failed");
+        }
     }
 
         static void getInfo() {
@@ -813,13 +816,13 @@ class ButtonActions {
                     infoChecker.execute();
                 } catch (Exception exception) {
                     exception.printStackTrace();
-                    System.out.println(infoChecker.getStatus());
+                    Log.d("Info Checker", infoChecker.getStatus().toString());
                 }
             } else if (infoChecker.getStatus() == AsyncTask.Status.FINISHED) {
                 infoChecker = new AsynchInfoChecker();
                 infoChecker.execute();
             } else {
-                System.out.println("Info Checker didn't intiallize: " + infoChecker.getStatus());
+                Log.i("Info Checker", ("Info Checker didn't intiallize: " + infoChecker.getStatus()));
             }
         }
 

@@ -341,7 +341,6 @@ public class Main2Activity extends Fragment {
                 }
             }
         });
-
         setShuffleButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

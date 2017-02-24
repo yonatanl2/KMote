@@ -202,6 +202,8 @@ public Runnable extendedInfoChecker = new Runnable() {
 
                         if (!progressSetter.isDaemon()) {
                             Log.i("Progress Log", "Thread Started");
+                            extendedHandler.removeCallbacks(progressSetter);
+                            progressSetter.setName("Progress Setter");
                             progressSetter.setDaemon(true);
                             progressSetter.run();
                         }
@@ -266,6 +268,8 @@ public Runnable extendedInfoChecker = new Runnable() {
 
                     if (!progressSetter.isAlive()) {
                         Log.i("Progress Log", "Thread Started");
+                        extendedHandler.removeCallbacks(progressSetter);
+                        progressSetter.setName("Progress Setter");
                         progressSetter.setDaemon(true);
                         progressSetter.run();
 
@@ -398,7 +402,8 @@ public Runnable extendedInfoChecker = new Runnable() {
             SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",
                     java.util.Locale.getDefault());
 
-            System.out.println("Measuring progress: " + format.format(cal.getTime()));
+            Log.d("Progress Setter","Measuring progress: " + format.format(cal.getTime()));
+            Log.d("Progress Setter",progressSetter.getName());
             if (contentTime > 0) {
                 seekBar.setMax((int) contentTime); 
                 if (TimeUnit.MILLISECONDS.toHours(contentTime) == 0) {
@@ -409,10 +414,8 @@ public Runnable extendedInfoChecker = new Runnable() {
             }
             if (!(TimeUnit.SECONDS.toSeconds(currentElaspedTime) >= TimeUnit.SECONDS.toSeconds(contentTime))) {
                 if (currentElaspedTime >= elaspedTime && currentElaspedTime <= (elaspedTime + 1200) && getPauseStatus()) {
-                    Log.i("Progress Log", ("1:" + String.valueOf(currentElaspedTime) + '_' + String.valueOf(elaspedTime)));
                     currentElaspedTime += 1000;
                 } else {
-                    Log.i("Progress Log", ("2:" + String.valueOf(currentElaspedTime) + '_' + String.valueOf(elaspedTime)));
                     currentElaspedTime = elaspedTime;
                 }
                 seekBar.setProgress((int) currentElaspedTime);
@@ -728,6 +731,7 @@ public Runnable extendedInfoChecker = new Runnable() {
         extendedHandler.removeCallbacks(null);
         progressSetter.interrupt();
         progressSetter.setDaemon(false);
+        extendedHandler.removeCallbacks(progressSetter);
         elaspedTime = 0;
     }
 
@@ -739,6 +743,7 @@ public Runnable extendedInfoChecker = new Runnable() {
         extendedHandler.removeCallbacks(null);
         progressSetter.interrupt();
         progressSetter.setDaemon(false);
+        extendedHandler.removeCallbacks(progressSetter);
         elaspedTime = 0;
 
     }

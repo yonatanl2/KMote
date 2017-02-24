@@ -16,6 +16,7 @@
         <item name="android:textColorPrimary">@android:color/white</item>
         <item name="android:statusBarColor">#1976D2</item>
         <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
+        <item name="android:colorControlHighlight">@color/colorHighlight</item>
     </style>
     
     <style name="myAlertDialog" parent="ThemeOverlay.AppCompat.Dialog.Alert">

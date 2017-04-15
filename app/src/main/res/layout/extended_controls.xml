@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:fitsSystemWindows="true"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    >
+
+    <!--<android.support.design.widget.AppBarLayout
+        android:id="@+id/app_bar_layout"
+        android:background="@android:color/transparent"
+        android:fitsSystemWindows="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+    <android.support.design.widget.CollapsingToolbarLayout
+        android:id="@+id/image_toolbar_extended"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fitsSystemWindows="true"
+        app:contentScrim="@android:color/transparent"
+        app:layout_scrollFlags="scroll|exitUntilCollapsed"> -->
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:id="@+id/image_main_extended"
+        android:layout_alignParentTop="true"
+        android:scaleType="centerCrop"
+        app:layout_collapseMode="parallax"
+        android:layout_height="180dp"
+        />
+
+  <!--  </android.support.design.widget.CollapsingToolbarLayout>
+
+    </android.support.design.widget.AppBarLayout> -->
+
+    <TextView
+        android:id="@+id/connecting_extended_controls"
+        android:layout_width="match_parent"
+        android:textAlignment="center"
+        android:layout_marginTop="32dp"
+        android:layout_height="wrap_content"
+        />
+
+<android.support.v4.widget.NestedScrollView
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/scrollView_extended"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    >
+
+    <RelativeLayout
+        android:paddingTop="180dp"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        >
+
+    <ImageButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:layout_marginEnd="8dp"
+        android:id="@+id/subtitle_button"
+        android:background="@drawable/ic_more_vert_white_18px"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/subtitle_text"
+        android:text="@string/more_actions"
+        android:textColor="@android:color/black"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="10dp"
+        android:layout_alignParentTop="true"
+        android:layout_toStartOf="@id/subtitle_button" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:maxWidth="220dp"
+        android:layout_height="wrap_content"
+        android:id="@+id/content_info_text"
+        android:textColor="@android:color/black"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginTop="8dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/content_info_nums"
+        android:textColor="@android:color/black"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:textSize="14sp"
+        android:layout_marginTop="4dp"
+        android:layout_below="@+id/content_info_text"
+        android:layout_alignParentStart="true"/>
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/current_progress"
+        android:textColor="@android:color/black"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_below="@+id/content_info_nums"
+        android:layout_alignParentStart="true"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/total_time"
+        android:textColor="@android:color/black"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_below="@+id/content_info_nums"
+        android:layout_alignParentEnd="true"
+        />
+
+    <SeekBar
+        android:elevation="2dp"
+        android:layout_marginTop="8dp"
+        android:id="@+id/seek_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/current_progress"
+        android:layout_toStartOf="@id/total_time"
+        android:progressBackgroundTint="@color/colorPrimaryDark"
+        android:layout_below="@id/content_info_nums"/>
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:id="@+id/player_actions_layout"
+        android:layout_below="@id/seek_bar"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp">
+
+        <ImageButton
+            style="?android:attr/buttonBarButtonStyle"
+            android:elevation="2dp"
+            android:layout_marginEnd="18dp"
+            android:layout_marginStart="18dp"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:id="@+id/roll_back_extended"
+            android:layout_weight="1"
+            android:visibility="visible" />
+        <ImageButton
+            style="?android:attr/buttonBarButtonStyle"
+            android:elevation="2dp"
+            android:layout_marginEnd="18dp"
+            android:layout_marginStart="18dp"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:id="@+id/stop_button_extended"
+            android:layout_weight="1" />
+
+        <ImageButton
+            style="?android:attr/buttonBarButtonStyle"
+            android:elevation="2dp"
+            android:layout_marginEnd="18dp"
+            android:layout_marginStart="18dp"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:id="@+id/play_pause_button_extended"
+            android:layout_weight="1" />
+        <ImageButton
+            style="?android:attr/buttonBarButtonStyle"
+            android:elevation="2dp"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_marginEnd="18dp"
+            android:layout_marginStart="18dp"
+            android:id="@+id/roll_forward_extended"
+            android:layout_weight="1" />
+
+    </LinearLayout>
+
+    <View
+        android:layout_below="@id/player_actions_layout"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:id="@+id/extended_separator"
+        android:background="@android:color/darker_gray"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            android:layout_below="@id/extended_separator"
+            android:textColor="@android:color/black"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:id="@+id/score_text"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_below="@id/score_text"
+        android:textColor="@android:color/black"
+        android:textSize="15sp"
+        android:id="@+id/plot_text"/>
+
+        <View
+            android:layout_below="@id/plot_text"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:id="@+id/extended_separator2"
+            android:background="@android:color/darker_gray"/>
+
+
+        <com.levyinc.android.kodimote.ExpandableHeightGridView
+            android:layout_below="@id/extended_separator2"
+            android:layout_marginTop="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:numColumns="4"
+            android:verticalSpacing="8dp"
+            android:horizontalSpacing="8dp"
+            android:gravity="center"
+            android:stretchMode="columnWidth"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:id="@+id/cast_grid">
+
+        </com.levyinc.android.kodimote.ExpandableHeightGridView>
+
+    </RelativeLayout>
+
+</android.support.v4.widget.NestedScrollView>
+
+</RelativeLayout>

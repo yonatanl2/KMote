@@ -1,0 +1,31 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <EditTextPreference
+        android:inputType="numberDecimal"
+        android:key="input_ip"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:digits="0123456789."
+        android:title="@string/pi_IP" />
+
+    <EditTextPreference
+        android:inputType="number"
+        android:key="input_port"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/port" />
+
+    <Preference android:title="Connect"
+        android:key="@string/connect"
+        android:summary="Click Here to Connect"/>
+
+    <Preference
+        android:key="@string/successful_login"
+       />
+
+
+
+
+</PreferenceScreen>

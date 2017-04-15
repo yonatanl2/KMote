@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:weightSum="8"
+    android:layout_margin="24dp"
+    >
+
+    <TextView
+        android:layout_marginEnd="24dp"
+        android:textStyle="bold"
+        android:textSize="48sp"
+        android:textColor="@android:color/white"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:textAlignment="gravity"
+        android:gravity="center_horizontal|center_vertical"
+        android:layout_weight="2"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:id="@+id/first_letter_playlist"
+        />
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="6">
+
+        <TextView
+            android:layout_marginTop="8dp"
+            android:textStyle="bold"
+            android:layout_width="match_parent"
+            android:textSize="18sp"
+            android:layout_height="wrap_content"
+            android:id="@+id/episode_name_playlist"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="8dp"
+            />
+
+        <TextView
+            android:textSize="14sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/element_stats_playlist"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="8dp"
+
+            />
+
+
+    </LinearLayout>
+
+
+
+
+</LinearLayout>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/seek_bar_layout"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:paddingBottom="32dp"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+
+    <ImageView
+        android:layout_marginTop="16dp"
+        app:srcCompat="@drawable/ic_volume_down_black_24dp"
+        android:id="@+id/low_volume_image"
+        android:layout_marginStart="16dp"
+        android:layout_width="50dp"
+        android:layout_alignParentStart="true"
+        android:layout_height="50dp" />
+
+
+    <ImageView
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        app:srcCompat="@drawable/ic_volume_up_black_24dp"
+        android:id="@+id/high_volume_image"
+        android:layout_width="50dp"
+        android:layout_alignParentEnd="true"
+        android:layout_height="50dp" />
+
+    <SeekBar
+        android:layout_toEndOf="@id/low_volume_image"
+        android:layout_toStartOf="@id/high_volume_image"
+        android:layout_marginTop="32dp"
+        android:progressBackgroundTint="@color/colorPrimaryDark"
+        android:elevation="2dp"
+        android:id="@+id/volume_seek_bar"
+        android:layout_marginStart="16dp"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_width="match_parent"
+
+        android:layout_height="wrap_content" />
+
+</RelativeLayout>

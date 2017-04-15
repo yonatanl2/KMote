@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    >
+    <item
+        android:id="@+id/fullscreen"
+        android:title="Toggle Fullscreen"
+        android:checkableBehavior="none"
+        />
+    <item
+        android:id="@+id/videolib"
+        android:title="Video Library"
+        android:checkableBehavior="none">
+
+    <menu>
+
+        <item
+            android:id="@+id/refresh_video"
+            android:title="Refresh Library"
+            android:checkableBehavior="none"
+            />
+
+        <item
+            android:id="@+id/clear_video"
+            android:title="Clear Library"
+            android:checkableBehavior="none"/>
+
+    </menu>
+
+    </item>
+
+    <item
+        android:id="@+id/audiolib"
+        android:title="Audio Library"
+        android:checkableBehavior="none">
+
+    <menu>
+
+        <item
+            android:id="@+id/refresh_audio"
+            android:title="Refresh Library"
+            android:checkableBehavior="none"
+            />
+
+        <item
+            android:id="@+id/clear_audio"
+            android:title="Clear Library"
+            android:checkableBehavior="none"/>
+
+    </menu>
+
+    </item>
+
+    <item
+        android:id="@+id/power_options"
+        android:title="Power Options"
+        android:checkableBehavior="none"
+        app:showAsAction="always"
+        android:icon="@drawable/ic_power_settings_new_white_24px">
+
+    <menu>
+        
+        <item
+            android:id="@+id/shutdown"
+            android:title="Shutdown"
+            android:checkableBehavior="none"/>
+        <item
+            android:id="@+id/reboot"
+            android:title="Reboot"
+            android:checkableBehavior="none"
+            />
+    </menu>
+
+    </item>
+
+</menu>

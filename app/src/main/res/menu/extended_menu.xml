@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    >
+
+    <item
+        android:title="Subtitles"
+        android:id="@+id/subtitles_menu"/>
+
+    <item
+        android:title="Audio Streams"
+        android:id="@+id/audiostream_menu"/>
+
+</menu>
